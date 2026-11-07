@@ -1,0 +1,24 @@
+{
+  "name": "attendsmart-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Location-aware Bluetooth attendance with a final class register, permanent posting and analytics for universities.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "icons": "node tools/make-icons.js",
+    "mobile:stage": "node tools/build-mobile.js",
+    "mobile:student": "node tools/build-mobile.js && cd native/student && npx cap sync android",
+    "mobile:lecturer": "node tools/build-mobile.js && cd native/lecturer && npx cap sync android",
+    "mobile:open:student": "npm run mobile:student && cd native/student && npx cap open android",
+    "mobile:open:lecturer": "npm run mobile:lecturer && cd native/lecturer && npx cap open android"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^8.6.0",
+    "@capacitor/core": "^8.6.0"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "/lecturer.html",
+  "name": "AttendSmart Lecturer",
+  "short_name": "AttendSmart",
+  "description": "Take live Bluetooth attendance and post the class register. Works offline.",
+  "start_url": "./lecturer.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "assets/icons/lecturer-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/lecturer-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/lecturer-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Take attendance", "short_name": "Attendance", "url": "./lecturer.html#/lecturer/classes" },
+    { "name": "Register course", "short_name": "Register", "url": "./lecturer.html#/lecturer/setup?course=c2" }
+  ]
+}

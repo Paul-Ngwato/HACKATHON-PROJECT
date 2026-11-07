@@ -1,0 +1,14 @@
+{
+  "appId": "com.baraton.attendsmart.lecturer",
+  "appName": "AttendSmart Lecturer",
+  "webDir": "www",
+  "backgroundColor": "#0b1220",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#0b1220",
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  }
+}
