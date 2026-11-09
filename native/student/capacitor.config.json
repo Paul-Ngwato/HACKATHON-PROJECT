@@ -1,14 +1,15 @@
 {
   "appId": "com.baraton.attendsmart.student",
-  "appName": "AttendSmart Student",
+  "appName": "AttendEase Student",
   "webDir": "www",
   "backgroundColor": "#0b1220",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "cleartext": true
   },
   "android": {
     "backgroundColor": "#0b1220",
-    "allowMixedContent": false,
+    "allowMixedContent": true,
     "webContentsDebuggingEnabled": false
   }
 }
