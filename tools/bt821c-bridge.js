@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 /**
- * AttendSmart AI — GlobalSat BT-821C bridge.
+ * AttendEase — GlobalSat BT-821C bridge.
  *
  * The BT-821C speaks Bluetooth Classic SPP and streams NMEA 0183 sentences.
  * Browsers can't open SPP sockets (Web Bluetooth is BLE only), so this small
- * local service does it and publishes the latest fix as JSON on loopback:
+ * service does it and publishes the latest fix as JSON. It listens on the LAN
+ * by default so phones can use the receiver when their own GPS is unavailable:
  *
- *   http://127.0.0.1:4190/fix      current fix (used by the web app)
- *   http://127.0.0.1:4190/health   receiver + parser status
- *   http://127.0.0.1:4190/nmea     last raw sentences (debugging)
+ *   http://<laptop>:4190/fix      current fix (used by both apps)
+ *   http://<laptop>:4190/health   receiver + parser status
+ *   http://<laptop>:4190/nmea     last raw sentences (debugging)
  *
  * Pair the receiver with the computer first (Windows: Settings → Bluetooth &
  * devices → Add device → "BT-821C"), then find the outgoing COM port:
@@ -27,9 +28,12 @@
 'use strict';
 
 const http = require('http');
+const os = require('os');
 const readline = require('readline');
 
-const DEFAULTS = { baud: 38400, http: 4190, host: '127.0.0.1' };
+// 0.0.0.0 lets the phones on the same Wi-Fi reach the receiver. Pass
+// `--host 127.0.0.1` to keep it laptop-only.
+const DEFAULTS = { baud: 38400, http: 4190, host: '0.0.0.0' };
 
 function parseArgs(argv) {
   const out = {};
@@ -255,7 +259,7 @@ const server = http.createServer((req, res) => {
 
   if (path === '/') {
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('AttendSmart BT-821C bridge. GET /fix, /health, /nmea\n');
+    res.end('AttendEase BT-821C bridge. GET /fix, /health, /nmea\n');
     return;
   }
 
@@ -355,19 +359,35 @@ async function listPorts() {
 /* ------------------------------------------------------------------ */
 
 if (args.help) {
-  console.log(`AttendSmart BT-821C bridge
+  console.log(`AttendEase BT-821C bridge
 
-  node tools/bt821c-bridge.js --port COM7 [--baud 38400] [--http 4190]
+  node tools/bt821c-bridge.js --port COM7 [--baud 38400] [--http 4190] [--host 0.0.0.0]
   node tools/bt821c-bridge.js --stdin
   node tools/bt821c-bridge.js --list`);
   process.exit(0);
 }
 
+function lanAddresses() {
+  const out = [];
+  for (const list of Object.values(os.networkInterfaces())) {
+    for (const net of list || []) {
+      if (net.family === 'IPv4' && !net.internal) out.push(net.address);
+    }
+  }
+  return out;
+}
+
 if (args.list) {
   listPorts();
 } else {
-  server.listen(HTTP_PORT, DEFAULTS.host, () => {
+  const HOST = typeof args.host === 'string' ? args.host : DEFAULTS.host;
+  server.listen(HTTP_PORT, HOST, () => {
     console.log(`[bridge] serving fixes at http://127.0.0.1:${HTTP_PORT}/fix`);
+    if (HOST === '0.0.0.0') {
+      for (const address of lanAddresses()) {
+        console.log(`[bridge] phones use http://${address}:${HTTP_PORT}/fix`);
+      }
+    }
   });
   if (args.stdin) startStdin();
   else startSerial();
