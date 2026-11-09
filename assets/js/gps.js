@@ -1,20 +1,78 @@
 /**
- * AttendSmart AI — GPS source layer.
+ * AttendEase — GPS source layer.
  *
- * Three sources feed the same fix shape, so verification never cares where the
- * coordinates came from:
+ * Two real sources feed the same fix shape, so verification never cares where
+ * the coordinates came from:
  *
  *   device   – the phone/laptop's own GNSS via the Geolocation API
  *   external – the GlobalSat BT-821C, read over Bluetooth SPP by
- *              tools/bt821c-bridge.js and exposed as JSON on loopback
- *   sim      – deterministic demo positions inside / outside the hall radius
+ *              tools/bt821c-bridge.js and exposed as JSON on the laptop
  *
  * Browsers cannot open a Bluetooth Classic SPP stream (Web Bluetooth is BLE
- * only), which is exactly why the receiver goes through the bridge.
+ * only), which is exactly why the receiver goes through the bridge. The bridge
+ * runs next to the attendance server, so its address is derived from the
+ * server address the phone already uses (same IP, port 4190 by default).
  */
 
-export const BRIDGE_BASE = 'http://127.0.0.1:4190';
+import { serverBase } from './data.js';
+
+export const BRIDGE_PORT = 4190;
+const BRIDGE_KEY = 'attendsmart.gps.bridge.v1';
 const SOURCE_KEY = 'attendsmart.gps.source.v1';
+
+/** Best guess for the laptop bridge: same host as the attendance server. */
+export function deriveBridgeBase() {
+  const base = serverBase();
+  const origin = base || (typeof location !== 'undefined' ? location.origin : '');
+  try {
+    const url = new URL(origin);
+    const host = url.hostname;
+    if (host && host !== 'localhost' && host !== '127.0.0.1' && host !== '::1') {
+      return `http://${host}:${BRIDGE_PORT}`;
+    }
+  } catch (err) {
+    /* file:// or a bare host — fall through to loopback */
+  }
+  return `http://127.0.0.1:${BRIDGE_PORT}`;
+}
+
+/** Configured bridge URL, or the address derived from the server. */
+export function getBridgeBase() {
+  try {
+    const saved = localStorage.getItem(BRIDGE_KEY);
+    if (saved) return saved.replace(/\/+$/, '');
+  } catch (err) {
+    /* ignore */
+  }
+  return deriveBridgeBase();
+}
+
+export function setBridgeBase(value) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    try {
+      localStorage.removeItem(BRIDGE_KEY);
+    } catch (err) {
+      /* ignore */
+    }
+    return deriveBridgeBase();
+  }
+  let clean = raw;
+  if (!/^https?:\/\//i.test(clean)) clean = `http://${clean}`;
+  clean = clean.replace(/\/+$/, '');
+  try {
+    const parsed = new URL(clean);
+    if (!parsed.port) parsed.port = String(BRIDGE_PORT);
+    clean = `${parsed.protocol}//${parsed.host}`;
+    localStorage.setItem(BRIDGE_KEY, clean);
+  } catch (err) {
+    throw new Error('That does not look like a valid bridge address.');
+  }
+  return clean;
+}
+
+/** Kept for older call sites; always resolves at import time. */
+export const BRIDGE_BASE = deriveBridgeBase();
 
 export const GPS_SOURCES = [
   {
@@ -28,12 +86,6 @@ export const GPS_SOURCES = [
     label: 'BT-821C',
     short: 'BT-821C',
     note: 'External Bluetooth GPS over NMEA. Best accuracy on the demo table.'
-  },
-  {
-    id: 'sim',
-    label: 'Simulate',
-    short: 'Sim',
-    note: 'Place yourself inside or outside the hall to demo the radius rule.'
   }
 ];
 
@@ -55,20 +107,12 @@ export function setPreferredSource(id) {
   }
 }
 
-/** Build the demo fix `meters` away from a hall, on a random bearing. */
-export function offsetFromHall(hall, meters, bearing) {
-  const angle = typeof bearing === 'number' ? bearing : Math.random() * Math.PI * 2;
-  const dLat = (meters * Math.cos(angle)) / 111320;
-  const dLng = (meters * Math.sin(angle)) / (111320 * Math.cos((hall.lat * Math.PI) / 180));
-  return { lat: hall.lat + dLat, lng: hall.lng + dLng };
-}
-
 /**
  * Creates a feed. `onChange(state)` fires on every update.
  * The consumer owns the lifecycle: call start() on mount, stop() on teardown.
  */
 export function createGpsFeed(onChange, options = {}) {
-  const bridgeUrl = (options.bridgeUrl || BRIDGE_BASE).replace(/\/$/, '');
+  const bridgeUrl = (options.bridgeUrl || getBridgeBase()).replace(/\/$/, '');
   let timer = null;
   let watchId = null;
   let stopped = true;
@@ -76,7 +120,7 @@ export function createGpsFeed(onChange, options = {}) {
 
   let state = {
     source: null,
-    status: 'idle', // idle | locating | ok | simulated | error
+    status: 'idle', // idle | locating | ok | error
     lat: null,
     lng: null,
     accuracy: null,
@@ -111,7 +155,10 @@ export function createGpsFeed(onChange, options = {}) {
       return;
     }
     if (!window.isSecureContext) {
-      emit({ status: 'error', error: 'Location needs a secure context. Open the app on http://localhost.' });
+      emit({
+        status: 'error',
+        error: 'This browser blocks GPS on a plain http:// address. Use the installed AttendEase app, or switch to the BT-821C receiver below.'
+      });
       return;
     }
     watchId = navigator.geolocation.watchPosition(
@@ -197,7 +244,7 @@ export function createGpsFeed(onChange, options = {}) {
         bridge: false,
         lat: null,
         lng: null,
-        error: `GPS bridge not reachable at ${bridgeUrl}. Start tools/bt821c-bridge.js.`
+        error: `BT-821C bridge not reachable at ${bridgeUrl}. On the laptop run: node tools/bt821c-bridge.js --host 0.0.0.0`
       });
     } finally {
       clearTimeout(abortTimer);
@@ -234,33 +281,6 @@ export function createGpsFeed(onChange, options = {}) {
       else emit({ status: 'idle' });
     },
 
-    /** Simulated position for the demo: inside, edge (just out) or far. */
-    simulate(kind, hall) {
-      clearTimers();
-      stopped = false;
-      if (!hall) {
-        emit({ status: 'error', error: 'No lecture hall selected.' });
-        return;
-      }
-      const meters = kind === 'inside' ? 6 + Math.random() * 18 : kind === 'edge' ? hall.radius * 1.8 : 420;
-      const { lat, lng } = offsetFromHall(hall, meters);
-      state = {
-        ...state,
-        source: 'sim',
-        status: 'simulated',
-        lat,
-        lng,
-        accuracy: 5,
-        sats: 9,
-        hdop: 0.8,
-        port: 'simulated',
-        bridge: false,
-        error: null,
-        at: new Date().toISOString()
-      };
-      onChange({ ...state });
-    },
-
     snapshot() {
       return { ...state };
     },
@@ -282,7 +302,7 @@ export function sourceLabel(id) {
  * both registration and check-in can offer "scan for it" instead of guessing.
  */
 export async function scanForReceiver(options = {}) {
-  const base = (options.bridgeUrl || BRIDGE_BASE).replace(/\/$/, '');
+  const base = (options.bridgeUrl || getBridgeBase()).replace(/\/$/, '');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 2200);
 
@@ -325,7 +345,7 @@ export async function scanForReceiver(options = {}) {
       ok: false,
       connected: false,
       fix: null,
-      error: `No BT-821C bridge at ${base}. Pair the receiver, start tools/bt821c-bridge.js, then scan again.`
+      error: `No BT-821C bridge at ${base}. Pair the receiver, run node tools/bt821c-bridge.js --host 0.0.0.0 on the laptop, then scan again.`
     };
   } finally {
     clearTimeout(timer);

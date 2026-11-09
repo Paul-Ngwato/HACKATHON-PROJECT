@@ -1,8 +1,8 @@
 {
   "id": "/student.html",
-  "name": "AttendSmart Student",
-  "short_name": "AttendSmart",
-  "description": "Check in to Baraton University classes with Bluetooth proximity. Works offline.",
+  "name": "AttendEase Student",
+  "short_name": "AttendEase",
+  "description": "Post attendance with the four-digit session code from inside the class GPS fence.",
   "start_url": "./student.html",
   "scope": "./",
   "display": "standalone",
@@ -17,7 +17,7 @@
     { "src": "assets/icons/student-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Check in", "short_name": "Check in", "url": "./student.html#/student/checkin" },
-    { "name": "History", "short_name": "History", "url": "./student.html#/student/history" }
+    { "name": "Scan attendance", "short_name": "Scan", "url": "./student.html#/student/checkin" },
+    { "name": "My attendance", "short_name": "Attendance", "url": "./student.html#/student/history" }
   ]
 }

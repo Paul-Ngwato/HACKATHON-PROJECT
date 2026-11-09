@@ -1,8 +1,8 @@
 {
   "id": "/lecturer.html",
-  "name": "AttendSmart Lecturer",
-  "short_name": "AttendSmart",
-  "description": "Take live Bluetooth attendance and post the class register. Works offline.",
+  "name": "AttendEase Lecturer",
+  "short_name": "AttendEase",
+  "description": "Create units, upload the class list, start a code + GPS session and download the report.",
   "start_url": "./lecturer.html",
   "scope": "./",
   "display": "standalone",
@@ -17,7 +17,7 @@
     { "src": "assets/icons/lecturer-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Take attendance", "short_name": "Attendance", "url": "./lecturer.html#/lecturer/classes" },
-    { "name": "Register course", "short_name": "Register", "url": "./lecturer.html#/lecturer/setup?course=c2" }
+    { "name": "My units", "short_name": "Units", "url": "./lecturer.html#/lecturer/classes" },
+    { "name": "Create unit", "short_name": "Create", "url": "./lecturer.html#/lecturer/create" }
   ]
 }

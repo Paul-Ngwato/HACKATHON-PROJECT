@@ -1,26 +1,28 @@
 /**
- * AttendSmart AI — student experience.
+ * AttendEase — student experience.
  *
- * Deliberately minimal: scan, pick the class, confirm, post. There is no code
- * to type and nothing to edit afterwards — the posted record is final.
- *
- * Overview and history stay available, but the check-in screen is a three-tap
- * flow so a student can do it while walking into the room.
+ * Enter the four-digit code the lecturer's server issued, confirm the class,
+ * post once. The record is written to the shared database, so the lecturer's
+ * live roster updates on a different phone.
  */
 
 import {
-  activeSessions,
+  activeSessionForStudent,
   checkIn,
   courseById,
-  hallById,
   haversineMeters,
   lecturerById,
+  lookupSession,
+  sessionVenue,
+  roomFor,
   LATE_GRACE_MIN
 } from '../data.js';
 import { studentOverview, round1, pctOf } from '../analytics.js';
 import {
   icon,
   esc,
+  ring,
+  progress,
   attendancePill,
   statusPill,
   fmtDate,
@@ -32,7 +34,7 @@ import {
   methodLabel,
   pctText
 } from '../ui.js';
-import { createGpsFeed } from '../gps.js';
+import { createGpsFeed, getBridgeBase, getPreferredSource, setBridgeBase, setPreferredSource } from '../gps.js';
 
 /* ------------------------------------------------------------------ */
 /* Transient check-in state                                            */
@@ -40,17 +42,17 @@ import { createGpsFeed } from '../gps.js';
 
 const state = {
   userId: null,
-  scanning: false,
-  scanned: false,
-  discovered: [],
-  sessionId: null,
+  code: '',
+  lookup: null,
   receipt: null,
   gps: null,
+  error: '',
+  finding: false,
+  posting: false,
   historyCourse: 'all'
 };
 
 let feed = null;
-let scanTimer = null;
 
 /* ------------------------------------------------------------------ */
 /* Overview                                                            */
@@ -64,12 +66,12 @@ export function overview(ctx) {
 
   const banner = current
     ? `<div class="alert alert-green mb-16">
-        <span class="alert-icon">${icon('bluetooth', 16)}</span>
+        <span class="alert-icon">${icon('key', 16)}</span>
         <div class="grow">
           <div class="alert-title">${esc(current.course.code)} attendance is open</div>
-          <div class="alert-body">Post before ${fmtTime(current.session.endsAt)}. Scan, confirm, done.</div>
+          <div class="alert-body">Ask your lecturer for the four-digit code. The window closes at ${fmtTime(current.session.endsAt)}.</div>
         </div>
-        <a class="btn btn-green btn-sm" href="#/student/checkin">Post attendance ${icon('arrow', 14)}</a>
+        <a class="btn btn-green btn-sm" href="#/student/checkin">Enter code ${icon('arrow', 14)}</a>
       </div>`
     : '';
 
@@ -104,19 +106,20 @@ export function overview(ctx) {
       </div>
       <div class="card-foot">
         <span class="muted tiny">${ov.attended} of ${ov.total} sessions attended overall · ${pctText(ov.pct)}</span>
-        <span class="muted tiny">Updates automatically as each session is held</span>
+        <span class="muted tiny">Updates automatically when the lecturer closes a window</span>
       </div>
     </div>`;
 
   return {
-    eyebrow: 'Student dashboard',
+    eyebrow: 'AttendEase · Student',
     title: `Hi, ${user.name.split(' ')[0]}`,
     sub: `${user.regNo} · ${user.program}`,
-    actions: `<a class="btn btn-soft btn-sm" href="#/student/history">${icon('clock', 15)} History</a>`,
+    actions: `<a class="btn btn-soft btn-sm" href="#/student/history">${icon('clock', 15)} My attendance</a>`,
     html
   };
 }
 
+/* ------------------------------------------------------------------ */
 /* Check-in helpers                                                    */
 /* ------------------------------------------------------------------ */
 
@@ -126,6 +129,10 @@ function distanceTo(hall) {
   return haversineMeters({ lat: gps.lat, lng: gps.lng }, hall);
 }
 
+function gpsReady() {
+  return !!(state.gps && state.gps.status === 'ok');
+}
+
 function locationStatus(hall) {
   const gps = state.gps;
   const dist = distanceTo(hall);
@@ -133,21 +140,21 @@ function locationStatus(hall) {
 
   let tone = '';
   let label = 'Waiting for location';
-  let detail = 'Pick a location source below.';
+  let detail = 'Allow location access on this phone, or switch to the BT-821C.';
 
   if (gps) {
     if (gps.status === 'locating') {
       tone = 'pill-amber';
-      label = 'Getting location';
-      detail = gps.error || 'Listening for a fix…';
+      label = gps.source === 'external' ? 'Reading BT-821C' : 'Getting location';
+      detail = gps.error || 'Listening for a GPS fix…';
     } else if (gps.status === 'error') {
       tone = 'pill-red';
       label = 'No usable location';
       detail = gps.error || 'Location unavailable.';
     } else if (gps.status === 'ok') {
       tone = 'pill-green';
-      label = 'Phone location';
-      detail = `±${Math.round(gps.accuracy || 0)} m`;
+      label = gps.source === 'external' ? 'BT-821C location' : 'Phone location';
+      detail = `${gps.bridge ? 'Bluetooth bridge' : 'This device'} · ±${Math.round(gps.accuracy || 0)} m`;
     }
   }
 
@@ -161,19 +168,35 @@ function locationStatus(hall) {
 }
 
 function locationBlock(hall) {
+  const preferred = getPreferredSource() === 'external' ? 'external' : 'device';
   return `<div id="gps-live">${locationStatus(hall)}</div>
     <div class="row mt-12">
+      <button class="btn btn-sm ${preferred === 'device' ? 'btn-primary' : 'btn-soft'} grow" data-source="device">${icon('pin', 14)} Phone GPS</button>
+      <button class="btn btn-sm ${preferred === 'external' ? 'btn-primary' : 'btn-soft'} grow" data-source="external">${icon('bluetooth', 14)} BT-821C</button>
+    </div>
+    <div class="field mt-8" id="bridge-field" style="${preferred === 'external' ? '' : 'display:none'}">
+      <label for="bridge-url">Bluetooth bridge address</label>
+      <input class="input" id="bridge-url" value="${esc(getBridgeBase())}" placeholder="http://192.168.1.20:4190" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="row mt-12">
       <button class="btn btn-soft btn-sm" data-action="retry-gps">${icon('refresh', 14)} Refresh location</button>
-      <span class="muted tiny">Uses this phone's GPS only.</span>
+      <span class="muted tiny">Checked against the class location · ${hall.radius} m fence.</span>
     </div>`;
 }
 
 function receiptHTML(ctx, receipt) {
   const { db } = ctx;
-  const session = receipt.session || db.sessions.find((s) => s.id === receipt.sessionId);
+  const session = receipt.session || (receipt.sessionId ? db.sessions.find((s) => s.id === receipt.sessionId) : null);
   const course = receipt.course || (session ? courseById(db, session.courseId) : null);
 
   if (!receipt.ok) {
+    const titles = {
+      enrolled: 'Not on the class list',
+      identity: 'Identity already bound',
+      duplicate: 'Already posted',
+      code: 'Code not recognised',
+      gps: 'Location check failed'
+    };
     return `<div class="card">
       <div class="card-head">
         <div class="card-title">${icon('alert', 16)} Attendance not posted</div>
@@ -183,12 +206,12 @@ function receiptHTML(ctx, receipt) {
         <div class="alert alert-red mb-16">
           <span class="alert-icon">${icon('lock', 15)}</span>
           <div>
-            <div class="alert-title">${receipt.step === 'enrolled' ? 'Not on the final register' : receipt.step === 'identity' ? 'Identity already bound' : 'Could not verify attendance'}</div>
+            <div class="alert-title">${titles[receipt.step] || 'Could not verify attendance'}</div>
             <div class="alert-body">${esc(receipt.message)}</div>
           </div>
         </div>
         <button class="btn btn-primary btn-block" data-action="retry">Try again</button>
-        <button class="btn btn-soft btn-block mt-8" data-action="change">Choose another class</button>
+        <button class="btn btn-soft btn-block mt-8" data-action="change">Enter another code</button>
       </div>
     </div>`;
   }
@@ -203,16 +226,16 @@ function receiptHTML(ctx, receipt) {
       <div class="alert alert-green mb-16">
         <span class="alert-icon">${icon('shield', 15)}</span>
         <div>
-          <div class="alert-title">Locked to your identity</div>
-          <div class="alert-body">This record is final. It cannot be edited, moved or reassigned to anyone else.</div>
+          <div class="alert-title">Saved to the shared register</div>
+          <div class="alert-body">Your lecturer's roster has already updated. This record is final and cannot be reassigned.</div>
         </div>
       </div>
-      <div class="stat-row"><span class="k">Class</span><span class="v">${esc(course.code)} · ${esc(course.name)}</span></div>
+      <div class="stat-row"><span class="k">Class</span><span class="v">${esc(course ? `${course.code} · ${course.name}` : 'Attendance')}</span></div>
       <div class="stat-row"><span class="k">Posted</span><span class="v">${fmtDateTime(record.checkedInAt)}</span></div>
-      <div class="stat-row"><span class="k">Method</span><span class="v">Bluetooth proximity + GPS</span></div>
-      <div class="stat-row"><span class="k">Distance from hall</span><span class="v">${record.distanceM} m</span></div>
+      <div class="stat-row"><span class="k">Method</span><span class="v">Session code + GPS</span></div>
+      <div class="stat-row"><span class="k">Distance from class</span><span class="v">${record.distanceM} m</span></div>
       <div class="row mt-16">
-        <a class="btn btn-soft grow" href="#/student/overview">Back to dashboard</a>
+        <a class="btn btn-soft grow" href="#/student/history">My attendance</a>
         <button class="btn btn-primary grow" data-action="done">Done</button>
       </div>
     </div>
@@ -227,90 +250,61 @@ export function checkin(ctx) {
   const { db, user } = ctx;
 
   // A different student signing in on the same tab must never inherit the
-  // previous student's selection, GPS fix or posted receipt.
+  // previous student's code, GPS fix or posted receipt.
   if (state.userId !== user.id) {
-    if (scanTimer) {
-      clearTimeout(scanTimer);
-      scanTimer = null;
-    }
     Object.assign(state, {
       userId: user.id,
-      scanning: false,
-      scanned: false,
-      discovered: [],
-      sessionId: null,
+      code: '',
+      lookup: null,
       receipt: null,
-      gps: null
+      gps: null,
+      error: '',
+      finding: false,
+      posting: false
     });
   }
 
-  const open = activeSessions(db);
-  // Only classes this device has actually heard may be selected or posted.
-  const heard = open.filter((s) => state.discovered.includes(s.id));
-  const selected = state.sessionId ? heard.find((s) => s.id === state.sessionId) || null : null;
-  if (state.sessionId && !selected) state.sessionId = null;
+  const open = activeSessionForStudent(db, user.id);
+  const lookup = state.lookup;
+  const hall = lookup && lookup.hall ? lookup.hall : null;
+  const course = lookup && lookup.course ? lookup.course : null;
 
-  const course = selected ? courseById(db, selected.courseId) : null;
-  const hall = selected ? hallById(db, selected.hallId) : null;
-  const enrolled = course ? course.studentIds.includes(user.id) : false;
-  const minutesLeft = selected ? Math.max(0, Math.round((new Date(selected.endsAt) - Date.now()) / 60000)) : 0;
-
-  const scanPanel = state.scanning
-    ? `<div class="row" style="gap:16px;padding:8px 0">
-        <div class="radar" style="width:92px;max-width:92px">
-          <span class="ring-line"></span><span class="ring-line"></span><span class="ring-line"></span>
-          <span class="sweep"></span>
-          <span class="core" style="width:40px;height:40px">${icon('bluetooth', 18)}</span>
-        </div>
-        <div>
-          <div class="strong">Listening for class broadcasts…</div>
-          <div class="muted small mt-4">Keep the app open — this takes a moment.</div>
-        </div>
-      </div>`
-    : `<div class="row" style="justify-content:space-between;gap:14px">
-        <div>
-          <div class="strong">${open.length ? `${open.length} class${open.length === 1 ? '' : 'es'} taking attendance now` : 'No attendance open nearby'}</div>
-          <div class="muted small mt-4">${open.length ? 'Pick your class, check the details, then post.' : 'Ask your lecturer to start the attendance window.'}</div>
-        </div>
-        <button class="btn ${state.scanned ? 'btn-soft' : 'btn-dark'}" id="scan-ble">${icon('scan', 15)} ${state.scanned ? 'Scan again' : 'Scan for classes'}</button>
+  const openList = open
+    .map((session) => {
+      const c = courseById(db, session.courseId);
+      const venue = sessionVenue(db, session);
+      return `<div class="session-option" style="cursor:default">
+        <span class="ic">${icon('key', 18)}</span>
+        <span class="m">
+          <span class="t">${esc(c ? `${c.code} · ${c.name}` : 'Class')}</span>
+          <span class="s">${esc(c ? roomFor(db, c) : venue.name)} · ${venue.radius} m fence · closes in ${Math.max(0, Math.round((new Date(session.endsAt) - Date.now()) / 60000))} min</span>
+        </span>
+        <span class="pill pill-live"><span class="dot"></span>Open</span>
       </div>`;
+    })
+    .join('');
 
-  const classOptions = heard.length
-    ? `<div class="mt-16">
-        ${heard
-          .map((s) => {
-            const c = courseById(db, s.courseId);
-            const h = hallById(db, s.hallId);
-            const isEnrolled = c.studentIds.includes(user.id);
-            const isSelected = s.id === state.sessionId;
-            return `<button class="session-option mt-8${isSelected ? ' selected' : ''}" data-session="${s.id}">
-              <span class="ic">${icon('bluetooth', 18)}</span>
-              <span class="m">
-                <span class="t">${esc(c.code)} · ${esc(c.name)}</span>
-                <span class="s">${esc(h ? h.name : 'Classroom')} · closes in ${Math.max(0, Math.round((new Date(s.endsAt) - Date.now()) / 60000))} min</span>
-              </span>
-              ${isEnrolled ? '<span class="pill pill-green">On register</span>' : '<span class="pill pill-amber">Not on register</span>'}
-              ${isSelected ? `<span class="tick" style="color:var(--brand)">${icon('check', 17)}</span>` : ''}
-            </button>`;
-          })
-          .join('')}
-      </div>`
-    : '';
-
-  const scanCard = `<div class="card mb-16">
+  const codeCard = `<div class="card mb-16">
     <div class="card-head">
-      <div class="card-title">${icon('bluetooth', 16)} Nearby classes</div>
-      <span class="pill ${state.scanning ? 'pill-amber' : heard.length ? 'pill-green' : ''}">${
-        state.scanning ? 'Scanning' : heard.length ? `${heard.length} open` : state.scanned ? 'None found' : 'Not scanned'
-      }</span>
+      <div class="card-title">${icon('key', 16)} Enter attendance code</div>
+      <span class="pill ${open.length ? 'pill-green' : ''}">${open.length ? `${open.length} lecture${open.length === 1 ? '' : 's'} open` : 'Waiting for lecturer'}</span>
     </div>
-    <div class="card-body">${scanPanel}${classOptions}</div>
+    <div class="card-body">
+      <div class="muted small">The lecturer's screen shows a four-digit code for this class. You must also be inside the ${open[0] ? sessionVenue(db, open[0]).radius : 30} m class fence.</div>
+      <div class="code-entry mt-12">
+        <input class="code-input" id="code-input" value="${esc(state.code)}" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="0000" autocomplete="one-time-code" spellcheck="false" aria-label="Four-digit attendance code">
+        <button class="btn btn-primary" id="find-session" ${state.finding ? 'disabled' : ''}>${state.finding ? 'Checking…' : 'Find lecture'}</button>
+      </div>
+      ${state.error ? `<div class="alert alert-red mt-12"><span class="alert-icon">${icon('alert', 15)}</span><div><div class="alert-title">Code not accepted</div><div class="alert-body">${esc(state.error)}</div></div></div>` : ''}
+      ${openList ? `<div class="mt-16"><div class="muted tiny mb-8">Active lectures nearby</div>${openList}</div>` : ''}
+    </div>
   </div>`;
 
   let detail = '';
   if (state.receipt) {
     detail = receiptHTML(ctx, state.receipt);
-  } else if (selected && course && hall) {
+  } else if (lookup && course && hall) {
+    const lecturer = lookup.lecturer || lecturerById(db, course.lecturerId);
     detail = `<div class="card">
       <div class="card-head">
         <div class="card-title">${icon('check', 16)} Confirm attendance</div>
@@ -321,21 +315,21 @@ export function checkin(ctx) {
           <div>
             <span class="pill pill-brand">${esc(course.code)}</span>
             <h2 style="font-size:18px;margin-top:8px">${esc(course.name)}</h2>
-            <div class="muted small mt-4">${esc((lecturerById(db, selected.lecturerId) || {}).name || 'Lecturer')}</div>
+            <div class="muted small mt-4">${esc(lecturer ? lecturer.name : 'Lecturer')}</div>
           </div>
-          <span class="pill ${enrolled ? 'pill-green' : 'pill-red'}">${enrolled ? 'On final register' : 'Not on final register'}</span>
+          <span class="pill ${lookup.enrolled ? 'pill-green' : 'pill-red'}">${lookup.enrolled ? 'On class list' : 'Not on class list'}</span>
         </div>
 
         <div class="grid grid-3 mt-16">
           <div class="stat-row" style="border:none;display:block">
-            <div class="k">Venue</div>
-            <div class="v">${esc(hall.name)}</div>
-            <div class="muted tiny">${hall.radius} m radius</div>
+            <div class="k">Room</div>
+            <div class="v">${esc(roomFor(db, course))}</div>
+            <div class="muted tiny">${hall.radius} m GPS fence</div>
           </div>
           <div class="stat-row" style="border:none;display:block">
             <div class="k">Window</div>
-            <div class="v">${fmtTime(selected.startedAt)} – ${fmtTime(selected.endsAt)}</div>
-            <div class="muted tiny">${minutesLeft} min left</div>
+            <div class="v">${fmtTime(lookup.session.startedAt)} – ${fmtTime(lookup.session.endsAt)}</div>
+            <div class="muted tiny">${lookup.minutesLeft} min left</div>
           </div>
           <div class="stat-row" style="border:none;display:block">
             <div class="k">Posted as</div>
@@ -355,43 +349,55 @@ export function checkin(ctx) {
         <div class="mt-16">
           <div class="row" style="justify-content:space-between">
             <span class="small strong">Location check</span>
-            <span class="muted tiny">Bluetooth already verified</span>
+            <span class="muted tiny">Code already matched</span>
           </div>
           <div class="mt-8">${locationBlock(hall)}</div>
         </div>
 
         <div class="row mt-16">
-          <button class="btn btn-soft" data-action="change">Change class</button>
-          <button class="btn btn-primary grow" id="post-attendance">${icon('check', 16)} Confirm & post attendance</button>
+          <button class="btn btn-soft" data-action="change">Change code</button>
+          <button class="btn btn-primary grow" id="post-attendance" ${state.posting ? 'disabled' : ''}>${state.posting ? 'Posting…' : `${icon('check', 16)} POST ATTENDANCE`}</button>
         </div>
       </div>
     </div>`;
   } else {
     detail = `<div class="card card-pad" style="text-align:center;padding:30px">
-      <div class="muted small">${state.scanned ? 'Choose a class above to continue.' : 'Scan first, then pick your class.'}</div>
+      <div class="muted small">${open.length ? 'Enter the four-digit code to see your class.' : 'No attendance window is open for your classes yet. Ask your lecturer to start one.'}</div>
     </div>`;
   }
 
   return {
-    eyebrow: 'Attendance',
-    title: 'Post attendance',
-    sub: 'Scan, confirm, done. Nothing to type.',
-    actions: `<a class="btn btn-soft btn-sm" href="#/student/overview">${icon('grid', 15)} Dashboard</a>`,
-    html: `${scanCard}${detail}`,
+    eyebrow: 'AttendEase · Student',
+    title: 'Scan attendance',
+    sub: open.length ? 'Active lectures nearby. Enter the code and post once.' : 'Enter the code your lecturer is showing.',
+    actions: `<a class="btn btn-soft btn-sm" href="#/student/history">${icon('clock', 15)} My attendance</a>`,
+    html: `${codeCard}${detail}`,
     mount(root) {
-      const scanBtn = root.querySelector('#scan-ble');
-      if (scanBtn) scanBtn.addEventListener('click', () => startScan(ctx));
+      const input = root.querySelector('#code-input');
+      const findBtn = root.querySelector('#find-session');
 
-      root.querySelectorAll('[data-session]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          state.sessionId = btn.dataset.session;
-          state.receipt = null;
-          state.gps = null;
-          ctx.refresh();
+      if (input) {
+        input.addEventListener('input', () => {
+          const clean = input.value.replace(/\D/g, '').slice(0, 4);
+          input.value = clean;
+          state.code = clean;
+          state.error = '';
         });
-      });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            find(ctx);
+          }
+        });
+        if (!state.lookup && !state.receipt) {
+          input.focus();
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
+      }
+      if (findBtn) findBtn.addEventListener('click', () => find(ctx));
 
-      if (selected && hall) {
+      if (lookup && hall) {
+        let source = getPreferredSource() === 'external' ? 'external' : 'device';
         const startFeed = () => {
           if (feed) feed.stop();
           state.gps = null;
@@ -400,47 +406,51 @@ export function checkin(ctx) {
             const holder = root.querySelector('#gps-live');
             if (holder) holder.innerHTML = locationStatus(hall);
           });
-          feed.start('device');
+          feed.start(source);
         };
         startFeed();
+
+        root.querySelectorAll('[data-source]').forEach((button) => {
+          button.addEventListener('click', () => {
+            source = button.dataset.source === 'external' ? 'external' : 'device';
+            setPreferredSource(source);
+            root.querySelectorAll('[data-source]').forEach((other) => {
+              const on = other.dataset.source === source;
+              other.className = `btn btn-sm ${on ? 'btn-primary' : 'btn-soft'} grow`;
+            });
+            const bridgeField = root.querySelector('#bridge-field');
+            if (bridgeField) bridgeField.style.display = source === 'external' ? '' : 'none';
+            startFeed();
+          });
+        });
+
+        const bridgeInput = root.querySelector('#bridge-url');
+        if (bridgeInput) {
+          bridgeInput.addEventListener('change', () => {
+            try {
+              const clean = setBridgeBase(bridgeInput.value);
+              bridgeInput.value = clean;
+              toast('Bridge address saved', { message: clean, tone: 'success' });
+              if (source === 'external') startFeed();
+            } catch (err) {
+              toast('Invalid bridge address', { message: err.message, tone: 'error' });
+            }
+          });
+        }
 
         const retryGps = root.querySelector('[data-action="retry-gps"]');
         if (retryGps) retryGps.addEventListener('click', () => startFeed());
 
         const postBtn = root.querySelector('#post-attendance');
-        if (postBtn) {
-          postBtn.addEventListener('click', () => {
-            const fresh = ctx.db.sessions.find((s) => s.id === state.sessionId && s.status === 'active');
-            if (!fresh) {
-              toast('Attendance closed', { message: 'The window closed before you posted.', tone: 'error' });
-              state.sessionId = null;
-              ctx.refresh();
-              return;
-            }
-            const freshHall = hallById(ctx.db, fresh.hallId);
-            const result = checkIn(ctx.db, {
-              sessionId: fresh.id,
-              studentId: ctx.user.id,
-              distanceM: distanceTo(freshHall),
-              deviceId: ctx.deviceId,
-              bleVerified: state.discovered.includes(fresh.id),
-              method: 'ble'
-            });
-            state.receipt = result;
-            toast(result.ok ? 'Attendance posted' : 'Attendance not posted', {
-              message: result.ok ? 'Locked to your identity — nothing to edit.' : result.message,
-              tone: result.ok ? 'success' : 'error',
-              duration: result.ok ? 4200 : 6500
-            });
-            ctx.refresh();
-          });
-        }
+        if (postBtn) postBtn.addEventListener('click', () => post(ctx));
       }
 
       root.querySelectorAll('[data-action="change"]').forEach((b) =>
         b.addEventListener('click', () => {
-          state.sessionId = null;
+          state.lookup = null;
           state.receipt = null;
+          state.code = '';
+          state.error = '';
           state.gps = null;
           ctx.refresh();
         })
@@ -449,6 +459,7 @@ export function checkin(ctx) {
       root.querySelectorAll('[data-action="retry"]').forEach((b) =>
         b.addEventListener('click', () => {
           state.receipt = null;
+          state.error = '';
           ctx.refresh();
         })
       );
@@ -456,47 +467,92 @@ export function checkin(ctx) {
       root.querySelectorAll('[data-action="done"]').forEach((b) =>
         b.addEventListener('click', () => {
           state.receipt = null;
-          state.sessionId = null;
+          state.lookup = null;
+          state.code = '';
+          state.error = '';
           state.gps = null;
-          state.scanned = false;
-          state.discovered = [];
           ctx.refresh();
         })
       );
-
-      // One automatic scan on arrival keeps the flow to three taps, and a new
-      // window appearing later triggers a fresh scan so it can be heard.
-      if (!state.scanning && !selected && (!state.scanned || open.some((s) => !state.discovered.includes(s.id)))) {
-        scanTimer = setTimeout(() => startScan(ctx), 420);
-      }
     },
     destroy() {
       if (feed) {
         feed.stop();
         feed = null;
       }
-      if (scanTimer) {
-        clearTimeout(scanTimer);
-        scanTimer = null;
-      }
     }
   };
 }
 
-function startScan(ctx) {
-  if (state.scanning) return;
-  state.scanning = true;
-  ctx.refresh();
-  scanTimer = setTimeout(() => {
-    const open = activeSessions(ctx.db);
-    state.scanning = false;
-    state.scanned = true;
-    state.discovered = open.map((s) => s.id);
+async function find(ctx) {
+  if (state.finding) return;
+  const clean = state.code.replace(/\D/g, '').slice(0, 4);
+  state.code = clean;
+  state.error = '';
+
+  if (clean.length !== 4) {
+    state.error = 'Enter all four digits shown on the lecturer’s screen.';
     ctx.refresh();
-    if (!open.length) {
-      toast('No classes broadcasting', { message: 'Ask your lecturer to start the attendance window.', tone: 'warn' });
+    return;
+  }
+
+  state.finding = true;
+  ctx.refresh();
+  try {
+    const result = await lookupSession(clean, ctx.user.id);
+    if (!result.ok) {
+      state.lookup = null;
+      state.error = result.message;
+    } else {
+      state.lookup = result;
+      state.error = '';
     }
-  }, 950);
+  } catch (err) {
+    state.lookup = null;
+    state.error = err.message;
+  } finally {
+    state.finding = false;
+    ctx.refresh();
+  }
+}
+
+async function post(ctx) {
+  if (state.posting) return;
+  if (!state.lookup) return;
+
+  if (!gpsReady()) {
+    toast('Waiting for location', { message: 'Allow location access and wait for a GPS fix, then post again.', tone: 'warn' });
+    return;
+  }
+
+  state.posting = true;
+  ctx.refresh();
+  try {
+    const result = await checkIn(null, {
+      code: state.code,
+      studentId: ctx.user.id,
+      deviceId: ctx.deviceId,
+      lat: state.gps.lat,
+      lng: state.gps.lng,
+      accuracy: state.gps.accuracy
+    });
+    state.receipt = result;
+    if (result.ok) {
+      state.lookup = null;
+      state.code = '';
+    }
+    toast(result.ok ? 'Attendance posted' : 'Attendance not posted', {
+      message: result.ok ? 'Saved to the shared register — your lecturer can see it now.' : result.message,
+      tone: result.ok ? 'success' : 'error',
+      duration: result.ok ? 4200 : 6500
+    });
+  } catch (err) {
+    state.receipt = { ok: false, step: 'server', message: err.message };
+    toast('Could not reach the server', { message: err.message, tone: 'error', duration: 6500 });
+  } finally {
+    state.posting = false;
+    ctx.refresh();
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -505,7 +561,26 @@ function startScan(ctx) {
 
 export function history(ctx) {
   const { db, user } = ctx;
+  const ov = studentOverview(db, user.id);
   const courses = db.courses.filter((c) => c.studentIds.includes(user.id));
+
+  const courseCards = ov.courses
+    .map(({ course, attended, total, pct }) => `<div class="card card-pad">
+      <div class="spread" style="align-items:flex-start">
+        <div>
+          <span class="pill pill-brand">${esc(course.code)}</span>
+          <h3 style="font-size:16px;margin-top:9px">${esc(course.name)}</h3>
+          <div class="muted small mt-4">${esc(roomFor(db, course))}</div>
+        </div>
+        ${ring(pct, { size: 58, stroke: 5 })}
+      </div>
+      <div class="mt-16">${progress(pct)}</div>
+      <div class="spread mt-8">
+        <span class="tiny muted">${attended} of ${total} sessions attended</span>
+        <span class="pill ${pct < 70 ? 'pill-red' : pct < 80 ? 'pill-amber' : 'pill-green'}">${pctText(pct)}</span>
+      </div>
+    </div>`)
+    .join('');
 
   let records = db.attendance
     .filter((a) => a.studentId === user.id)
@@ -548,7 +623,19 @@ export function history(ctx) {
         .join('')
     : `<tr><td colspan="6"><div class="empty">No records for this filter.</div></td></tr>`;
 
-  const html = `<div class="kpi-grid">
+  const html = `<div class="card mb-16">
+      <div class="card-head">
+        <div class="card-title">${icon('book', 16)} My units</div>
+        <span class="card-hint">${ov.courses.length} unit${ov.courses.length === 1 ? '' : 's'} · ${pctText(ov.pct)} overall</span>
+      </div>
+      <div class="card-body">
+        <div class="grid grid-2">
+          ${courseCards || `<div class="empty"><div class="ic">${icon('book', 20)}</div>You are not on a class list yet. Ask your lecturer to upload it.</div>`}
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
       <div class="kpi"><div class="kpi-label">${icon('check', 14)} Sessions attended</div><div class="kpi-value">${attended}</div><div class="kpi-foot">of ${totalSessions} held</div></div>
       <div class="kpi"><div class="kpi-label">${icon('x', 14)} Sessions missed</div><div class="kpi-value">${missed}</div><div class="kpi-foot">${round1(overall)}% attendance${state.historyCourse !== 'all' ? ' (this course)' : ''}</div></div>
       <div class="kpi"><div class="kpi-label">${icon('clock', 14)} Late arrivals</div><div class="kpi-value">${late}</div><div class="kpi-foot">After ${LATE_GRACE_MIN} minutes</div></div>
@@ -576,9 +663,9 @@ export function history(ctx) {
     </div>`;
 
   return {
-    eyebrow: 'Records',
-    title: 'Attendance history',
-    sub: 'Every posted session, with the method and distance the system verified.',
+    eyebrow: 'AttendEase · Student',
+    title: 'My attendance',
+    sub: `${user.regNo} · ${pctText(ov.pct)} overall across ${ov.courses.length} unit${ov.courses.length === 1 ? '' : 's'}.`,
     html,
     mount(root) {
       const filter = root.querySelector('#history-filter');
@@ -592,7 +679,7 @@ export function history(ctx) {
       if (exportBtn) {
         exportBtn.addEventListener('click', () => {
           downloadCSV(
-            `attendsmart-${user.regNo.replace(/[^\w]+/g, '-')}-attendance.csv`,
+            `attendease-${user.regNo.replace(/[^\w]+/g, '-')}-attendance.csv`,
             ['Date', 'Time', 'Course', 'Course name', 'Method', 'Distance (m)', 'Status', 'Session'],
             records.map((r) => [
               fmtDateShort(r.checkedInAt),

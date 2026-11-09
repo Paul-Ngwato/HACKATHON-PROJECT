@@ -1,5 +1,5 @@
 /**
- * AttendSmart AI — UI toolkit: icons, formatters, charts, toasts, modals, CSV.
+ * AttendEase — UI toolkit: icons, formatters, charts, toasts, modals, CSV.
  * No dependencies; every chart is inline SVG so it renders instantly offline.
  */
 
@@ -42,7 +42,9 @@ const ICONS = {
   sliders: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>',
   satellite: '<path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a10 10 0 0 1 13 0M8.5 16a6 6 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1.1"/>',
   plug: '<path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0Z"/><path d="M12 17v4"/>',
-  star: '<path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8Z"/>'
+  star: '<path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8Z"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  upload: '<path d="M12 16V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 20h16"/>'
 };
 
 export function icon(name, size = 18) {
@@ -130,9 +132,9 @@ export function statusPill(status) {
 }
 
 export function methodLabel(method) {
-  if (method === 'ble') return 'Bluetooth';
+  if (method === 'ble') return 'Session code';
   if (method === 'qr') return 'QR scan';
-  if (method === 'code') return 'One-time code';
+  if (method === 'code') return 'Session code + GPS';
   return esc(method || '—');
 }
 
@@ -291,6 +293,7 @@ export function modal({ title, sub = '', body = '', footer = '', onMount, onClos
     <div class="modal-head">
       <div class="modal-title">${esc(title)}</div>
       ${sub ? `<div class="modal-sub">${esc(sub)}</div>` : ''}
+      <button class="modal-x" type="button" aria-label="Close">×</button>
     </div>
     <div class="modal-body">${body}</div>
     ${footer ? `<div class="modal-foot">${footer}</div>` : ''}
@@ -312,6 +315,8 @@ export function modal({ title, sub = '', body = '', footer = '', onMount, onClos
     }
   }
   document.addEventListener('keydown', onKey);
+  const closeButton = wrap.querySelector('.modal-x');
+  if (closeButton) closeButton.addEventListener('click', close);
   wrap.addEventListener('mousedown', (e) => {
     if (e.target === wrap) close();
   });

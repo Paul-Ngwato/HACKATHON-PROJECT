@@ -162,11 +162,15 @@ export function overview(ctx) {
             footer: '<button class="btn btn-soft" data-modal="cancel">Cancel</button><button class="btn btn-danger" data-modal="confirm">Reset data</button>',
             onMount(wrap, close) {
               wrap.querySelector('[data-modal="cancel"]').addEventListener('click', close);
-              wrap.querySelector('[data-modal="confirm"]').addEventListener('click', () => {
-                resetDB();
+              wrap.querySelector('[data-modal="confirm"]').addEventListener('click', async () => {
                 close();
-                toast('Demo data reset', { message: 'A fresh semester has been generated.', tone: 'success' });
-                viewCtx.refresh();
+                try {
+                  await resetDB();
+                  toast('Demo data reset', { message: 'A fresh semester has been generated on the shared server.', tone: 'success' });
+                  viewCtx.refresh();
+                } catch (err) {
+                  toast('Could not reset', { message: err.message, tone: 'error' });
+                }
               });
             }
           });

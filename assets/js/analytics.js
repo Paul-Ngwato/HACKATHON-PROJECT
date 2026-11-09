@@ -368,7 +368,7 @@ export function studentNotifications(db, studentId) {
     notes.push({
       tone: 'green',
       title: `Attendance is open: ${a.course.code}`,
-      body: `A session is live now in ${a.course.name}. Open Check in to verify your Bluetooth, code and GPS.`
+      body: `A session is live now in ${a.course.name}. Open Check in, enter the code and verify your GPS.`
     });
   }
 

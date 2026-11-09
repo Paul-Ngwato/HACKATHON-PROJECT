@@ -1,16 +1,23 @@
 /**
- * AttendSmart AI — app shell, role routing and cross-tab sync.
+ * AttendEase — app shell, role routing and live sync.
  *
- * The signed-in user lives in sessionStorage so two tabs can run different
- * roles (lecturer + student) while the attendance database in localStorage is
- * shared. Writing a check-in fires a storage event in the other tab, which
- * re-renders that tab and makes the live roster update.
+ * The signed-in user still lives in sessionStorage so a lecturer tab and a
+ * student tab can run side by side, but the attendance database is shared:
+ * every change arrives from the server as a revision event and the current
+ * view re-renders against the fresh snapshot.
  */
 
 import {
-  STORAGE_KEY,
   getDB,
-  reloadDB,
+  initDB,
+  refreshDB,
+  subscribeToState,
+  needsServerSetup,
+  serverBase,
+  serverLabel,
+  setServerBase,
+  clearServerBase,
+  setActor,
   findUser,
   storedUserId,
   storeUser,
@@ -22,36 +29,55 @@ import {
 } from './data.js';
 import { icon, avatar, esc, toast } from './ui.js';
 import * as Login from './views/login.js';
-import * as Student from './views/student.js';
-import * as Lecturer from './views/lecturer.js';
 import * as Admin from './views/admin.js';
+import * as PortalStudent from './views/portal-student.js';
+import * as PortalLecturer from './views/portal-lecturer.js';
 
 // student.html / lecturer.html set data-app on <body>. The root index.html keeps
 // the full demo with a role picker.
 const APP_ROLE = document.body.dataset.app || 'all';
 
+// Student and lecturer screens are the old government-portal layout. Admin keeps
+// the internal console.
 const ROUTES = {
-  'student/overview': Student.overview,
-  'student/checkin': Student.checkin,
-  'student/history': Student.history,
-  'lecturer/classes': Lecturer.overview,
-  'lecturer/setup': Lecturer.setup,
-  'lecturer/session': Lecturer.session,
-  'lecturer/analytics': Lecturer.analytics,
+  'student/checkin': PortalStudent.checkin,
+  'student/history': PortalStudent.history,
+  'student/reports': PortalStudent.reports,
+  'lecturer/classes': PortalLecturer.overview,
+  'lecturer/create': PortalLecturer.overview,
+  'lecturer/setup': PortalLecturer.overview,
+  'lecturer/session': PortalLecturer.overview,
+  'lecturer/analytics': PortalLecturer.overview,
   'admin/overview': Admin.overview,
   'admin/risk': Admin.risk,
   'admin/courses': Admin.courses
 };
 
+const PORTAL_TABS = {
+  student: [
+    { key: 'student/checkin', label: 'Take Attendance' },
+    { key: 'student/history', label: 'My Attendance' },
+    { key: 'student/reports', label: 'Reports' }
+  ]
+};
+
+const PORTAL_NAME = { student: 'STUDENT PORTAL', lecturer: 'LECTURER PORTAL' };
+const PORTAL_TRAIL = { student: 'Home » Student Portal', lecturer: 'Home » Lecturer Dashboard' };
+const PORTAL_PAGE = {
+  'student/checkin': 'Take Attendance',
+  'student/history': 'My Attendance',
+  'student/reports': 'Reports',
+  'lecturer/classes': 'Manage Units'
+};
+
 const NAV = {
   student: [
-    { key: 'student/overview', label: 'Overview', icon: 'grid' },
-    { key: 'student/checkin', label: 'Check in', icon: 'bluetooth' },
-    { key: 'student/history', label: 'History', icon: 'clock' }
+    { key: 'student/checkin', label: 'Scan attendance', icon: 'key' },
+    { key: 'student/history', label: 'My attendance', icon: 'clock' }
   ],
   lecturer: [
-    { key: 'lecturer/classes', label: 'Attendance', icon: 'play' },
-    { key: 'lecturer/setup', label: 'Register course', icon: 'users' }
+    { key: 'lecturer/classes', label: 'My units', icon: 'book' },
+    { key: 'lecturer/create', label: 'Create unit', icon: 'plus' }
   ],
   admin: [
     { key: 'admin/overview', label: 'University', icon: 'grid' },
@@ -61,10 +87,14 @@ const NAV = {
 };
 
 const ROLE_LABEL = { student: 'Student', lecturer: 'Lecturer', admin: 'Administrator' };
-const HOME = { student: 'overview', lecturer: 'classes', admin: 'overview' };
+const HOME = { student: 'checkin', lecturer: 'classes', admin: 'overview' };
 
 const app = document.getElementById('app');
 let activeView = null;
+let serverOnline = false;
+let unsubscribe = null;
+let pollTimer = null;
+let refreshing = false;
 
 // Inside the Android wrapper every asset ships in the APK, and an installed PWA
 // runs standalone — both cases hide the Install button.
@@ -101,7 +131,48 @@ function cleanup() {
   activeView = null;
 }
 
+function portalShell(auth, navKey, view) {
+  const role = auth.role;
+  const tabs = PORTAL_TABS[role] || [];
+  const page = PORTAL_PAGE[navKey] || 'Dashboard';
+
+  return `<div class="gov">
+    <header class="gov-header">
+      <div class="gov-header-inner">
+        <div class="gov-brand">
+          <span class="gov-mark">AE</span>
+          <span>AttendEase <em>${PORTAL_NAME[role]}</em></span>
+        </div>
+        <div class="gov-user">Logged in: ${role.toUpperCase()} — ${esc(auth.user.name)}</div>
+      </div>
+    </header>
+    <div class="gov-bar"></div>
+    <div class="gov-wrap">
+      <div class="gov-crumb">${PORTAL_TRAIL[role]} » ${page}</div>
+      ${
+        tabs.length > 1
+          ? `<nav class="gov-tabs">${tabs
+              .map((tab) => `<a class="${tab.key === navKey ? 'active' : ''}" href="#/${tab.key}">${tab.label}</a>`)
+              .join('')}</nav>`
+          : ''
+      }
+      <main class="gov-content page">${view.html || ''}</main>
+      <footer class="gov-foot">
+        <div>AttendEase v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE</div>
+        <div class="gov-foot-tools">
+          <button class="gov-link" data-action="server">Server: ${esc(serverLabel())}</button>
+          <button class="gov-link" data-action="signout">Switch user</button>
+        </div>
+      </footer>
+    </div>
+  </div>`;
+}
+
 function shell(auth, navKey, view) {
+  if (auth.role === 'student' || auth.role === 'lecturer') {
+    return portalShell(auth, navKey, view);
+  }
+
   const user = auth.user;
   const sub = auth.role === 'student' ? user.regNo : auth.role === 'lecturer' ? user.department : user.title;
   const avatarTone = auth.role === 'student' ? 'violet' : auth.role === 'lecturer' ? 'green' : '';
@@ -111,7 +182,7 @@ function shell(auth, navKey, view) {
       <a class="brand" href="#/${auth.role}/${HOME[auth.role]}" style="text-decoration:none">
         <span class="brand-mark">${icon('shield', 20)}</span>
         <span>
-          <span class="brand-name">AttendSmart <span>AI</span></span><br>
+          <span class="brand-name">AttendEase</span><br>
           <span class="brand-sub">Baraton University</span>
         </span>
       </a>
@@ -127,11 +198,12 @@ function shell(auth, navKey, view) {
       </nav>
       <div class="sidebar-foot">
         <div class="row" style="gap:6px;margin-bottom:10px">
-          <span class="pill" id="net-state" title="Attendance runs on Bluetooth + this device's database.">
-            <span class="dot"></span><span id="net-label">Online</span>
+          <span class="pill" id="net-state" title="Shared attendance server">
+            <span class="dot"></span><span id="net-label">Connecting…</span>
           </span>
         </div>
-        <button class="ghost-btn" data-action="install" style="display:none" title="Add AttendSmart to this device's home screen">${icon('download', 15)} Install app</button>
+        <button class="ghost-btn" data-action="install" style="display:none" title="Add AttendEase to this device's home screen">${icon('download', 15)} Install app</button>
+        <button class="ghost-btn" data-action="server" title="Change the shared server address">${icon('plug', 15)} Server · ${esc(serverLabel())}</button>
         <div class="sidebar-user">
           ${avatar(user.name, avatarTone)}
           <span class="meta">
@@ -177,6 +249,135 @@ function errorScreen(err) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Connect to the shared backend                                       */
+/* ------------------------------------------------------------------ */
+
+function renderConnect(detail) {
+  cleanup();
+  const value = serverBase() || '';
+  const showReset = !needsServerSetup();
+
+  app.innerHTML = `<div class="auth">
+    <section class="auth-hero">
+      <div class="hero-eyebrow"><span class="dot"></span>Baraton University · Smart attendance</div>
+      <div>
+        <h1>One register. <em>Every phone.</em></h1>
+        <p class="lede">The lecturer's window and the student's check-in now live in one shared database on the class Wi-Fi. Start the server on the laptop, then point both apps at it.</p>
+      </div>
+      <div class="verify-chain">
+        <div class="vc-item">
+          <span class="ic">${icon('play', 17)}</span>
+          <div><div class="t">Lecturer opens a window</div><div class="d">A four-digit code is issued by the server</div></div>
+          <span class="check">${icon('check', 16)}</span>
+        </div>
+        <div class="vc-item">
+          <span class="ic">${icon('key', 17)}</span>
+          <div><div class="t">Student enters the code</div><div class="d">Plus GPS inside the hall fence</div></div>
+          <span class="check">${icon('check', 16)}</span>
+        </div>
+        <div class="vc-item">
+          <span class="ic">${icon('users', 17)}</span>
+          <div><div class="t">Roster updates live</div><div class="d">No refresh, no second database</div></div>
+          <span class="check">${icon('check', 16)}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="auth-panel">
+      <div class="auth-card">
+        <div class="eyebrow">Shared backend</div>
+        <h2>Connect to the server</h2>
+        <p class="sub">Type the Network address printed by <code>npm start</code> on the laptop.</p>
+
+        ${detail ? `<div class="alert alert-red mb-16"><span class="alert-icon">${icon('alert', 16)}</span><div><div class="alert-title">Not connected</div><div class="alert-body">${esc(detail)}</div></div></div>` : ''}
+
+        <div class="field">
+          <label for="server-url">Server address</label>
+          <input class="input" id="server-url" value="${esc(value)}" placeholder="http://192.168.1.20:4173" inputmode="url" autocomplete="off" spellcheck="false">
+        </div>
+
+        <button class="btn btn-primary btn-block" id="connect">${icon('plug', 16)} Connect</button>
+        ${showReset ? `<button class="btn btn-soft btn-block mt-8" id="use-here">${icon('refresh', 15)} Use this server</button>` : ''}
+
+        <div class="auth-note">
+          The laptop must be on the same Wi-Fi as the phones. Start it with <code>npm start</code>; keep the window open during the demo.
+        </div>
+      </div>
+    </section>
+  </div>`;
+
+  const input = document.getElementById('server-url');
+  const connect = document.getElementById('connect');
+  const go = async () => {
+    try {
+      setServerBase(input.value);
+    } catch (err) {
+      toast('Invalid address', { message: err.message, tone: 'error' });
+      return;
+    }
+    connect.disabled = true;
+    connect.innerHTML = 'Connecting…';
+    await boot();
+  };
+  connect.addEventListener('click', go);
+  if (input) {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') go();
+    });
+    setTimeout(() => input.focus(), 60);
+  }
+
+  const useHere = document.getElementById('use-here');
+  if (useHere) {
+    useHere.addEventListener('click', async () => {
+      clearServerBase();
+      await boot();
+    });
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Live updates                                                        */
+/* ------------------------------------------------------------------ */
+
+async function pull() {
+  if (refreshing) return false;
+  refreshing = true;
+  try {
+    const changed = await refreshDB();
+    serverOnline = true;
+    if (changed) render();
+    else paintNetwork();
+    return changed;
+  } catch (err) {
+    serverOnline = false;
+    paintNetwork();
+    return false;
+  } finally {
+    refreshing = false;
+  }
+}
+
+function connectLive() {
+  if (unsubscribe) unsubscribe();
+  let pullTimer = null;
+  unsubscribe = subscribeToState(() => {
+    // One pull per burst: a class posting together must not make every phone
+    // fetch the snapshot dozens of times.
+    if (pullTimer) return;
+    pullTimer = setTimeout(() => {
+      pullTimer = null;
+      pull();
+    }, 250);
+  });
+
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(() => {
+    if (!serverOnline || document.visibilityState === 'visible') pull();
+  }, 10000);
+}
+
+/* ------------------------------------------------------------------ */
 /* Render                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -189,6 +390,7 @@ function renderAuth(db) {
       const auth = findUser(db, id);
       if (!auth) return;
       storeUser(id);
+      setActor(id);
       if (auth.role === 'student') rememberStudent(id);
       const target = `#/${auth.role}/${HOME[auth.role]}`;
       if (location.hash === target) render();
@@ -200,10 +402,14 @@ function renderAuth(db) {
 }
 
 function render() {
-  let db;
+  const db = getDB();
+  if (!db || !db.revision) {
+    renderConnect('The server did not return a database snapshot.');
+    return;
+  }
+
   let auth;
   try {
-    db = getDB();
     let id = storedUserId();
 
     // Student app: the one-time sign-in is remembered on this device.
@@ -217,10 +423,11 @@ function render() {
     }
 
     auth = id ? findUser(db, id) : null;
+    setActor(auth ? auth.user.id : null);
   } catch (err) {
     console.error('[AttendSmart] could not load state', err);
     app.innerHTML = shell(
-      { role: 'admin', user: findUser(getDB(), 'a1') ? getDB().admin : { name: 'Demo' } },
+      { role: 'admin', user: (db && db.admin) || { name: 'Demo' } },
       'admin/overview',
       errorScreen(err)
     );
@@ -251,7 +458,9 @@ function render() {
 
   const pageKey = `${auth.role}/${route.page || home}`;
   const viewFn = ROUTES[pageKey] || ROUTES[`${auth.role}/${home}`];
-  const navKey = pageKey === 'lecturer/session' || pageKey === 'lecturer/analytics' ? 'lecturer/classes' : pageKey;
+  const navKey = ['lecturer/session', 'lecturer/analytics', 'lecturer/setup'].includes(pageKey)
+    ? 'lecturer/classes'
+    : pageKey;
 
   const ctx = {
     db,
@@ -260,6 +469,16 @@ function render() {
     params: route.params,
     deviceId: getDeviceId(),
     refresh: render,
+    sync: async () => {
+      try {
+        await refreshDB();
+        serverOnline = true;
+      } catch (err) {
+        serverOnline = false;
+        toast('Server unreachable', { message: err.message, tone: 'error' });
+      }
+      render();
+    },
     toast
   };
 
@@ -303,12 +522,11 @@ function paintNetwork() {
   const state = document.getElementById('net-state');
   const label = document.getElementById('net-label');
   if (!state || !label) return;
-  const online = navigator.onLine;
-  label.textContent = online ? 'Online' : 'Offline · local DB';
-  state.className = online ? 'pill' : 'pill pill-amber';
-  state.title = online
-    ? "Attendance runs on Bluetooth + this device's database."
-    : 'No connection. Attendance still works; register sync waits for Wi-Fi.';
+  label.textContent = serverOnline ? 'Server connected' : 'Server unreachable';
+  state.className = serverOnline ? 'pill pill-green' : 'pill pill-red';
+  state.title = serverOnline
+    ? `Shared attendance database at ${serverLabel()}.`
+    : `Cannot reach ${serverLabel()}. Writes are disabled until the server returns.`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -322,33 +540,39 @@ app.addEventListener('click', (e) => {
     return;
   }
 
+  const server = e.target.closest('[data-action="server"]');
+  if (server) {
+    renderConnect('Change the address and reconnect. The demo database stays on the laptop.');
+    return;
+  }
+
   const btn = e.target.closest('[data-action="signout"]');
   if (!btn) return;
   cleanup();
   clearUser();
   forgetStudent();
+  setActor(null);
   if (location.hash === '#/' || location.hash === '') render();
   else location.hash = '#/';
 });
 
 window.addEventListener('hashchange', render);
-window.addEventListener('online', paintNetwork);
-window.addEventListener('offline', paintNetwork);
-
-// Attendance written in another tab (student check-in, lecturer end session)
-// arrives here and re-renders the current view.
-window.addEventListener('storage', (e) => {
-  if (e.key !== STORAGE_KEY) return;
-  reloadDB();
-  render();
+window.addEventListener('online', () => {
+  serverOnline = navigator.onLine;
+  paintNetwork();
+  pull();
+});
+window.addEventListener('offline', () => {
+  serverOnline = false;
+  paintNetwork();
 });
 
 window.addEventListener('error', (e) => {
   console.error('[AttendSmart] uncaught', e.error || e.message);
 });
 
-// Offline shell: after the first visit both apps open with no connection. The
-// Android build already bundles every asset, so it skips the worker entirely.
+// Offline shell: the Android build already bundles every asset, so it skips
+// the worker entirely. The API itself is never cached.
 if ('serviceWorker' in navigator && !NATIVE_APP) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js', { scope: './' }).catch((err) => {
@@ -356,8 +580,6 @@ if ('serviceWorker' in navigator && !NATIVE_APP) {
     });
   });
 }
-
-render();
 
 /* ------------------------------------------------------------------ */
 /* Installable app                                                     */
@@ -383,12 +605,10 @@ async function promptInstall() {
   }
   paintInstall();
   if (accepted) {
-    toast('Installing AttendSmart', { message: 'Opens full screen and works offline.' });
+    toast('Installing AttendEase', { message: 'Opens full screen and stays in sync with the class server.' });
   }
 }
 
-// Chrome/Android fire this once the app meets the install criteria: manifest,
-// icons, a service worker and a secure context.
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   installPrompt = e;
@@ -398,5 +618,34 @@ window.addEventListener('beforeinstallprompt', (e) => {
 window.addEventListener('appinstalled', () => {
   installPrompt = null;
   paintInstall();
-  toast('App installed', { message: 'AttendSmart is on your home screen.' });
+  toast('App installed', { message: 'AttendEase is on your home screen.' });
 });
+
+/* ------------------------------------------------------------------ */
+/* Boot                                                                */
+/* ------------------------------------------------------------------ */
+
+async function boot() {
+  if (needsServerSetup()) {
+    renderConnect('This app is bundled without a server address. Enter the laptop address to continue.');
+    return;
+  }
+
+  try {
+    await initDB();
+    serverOnline = true;
+  } catch (err) {
+    serverOnline = false;
+    if (err.message === 'server-not-configured') {
+      renderConnect('');
+    } else {
+      renderConnect(err.message);
+    }
+    return;
+  }
+
+  connectLive();
+  render();
+}
+
+boot();

@@ -1,15 +1,15 @@
 /**
- * AttendSmart AI — offline shell.
+ * AttendEase - app shell cache.
  *
- * Attendance is a local-first flow: Bluetooth proximity plus the browser's
- * database. This worker caches the two app shells and every asset they import,
- * so both apps (and the full demo) open with no network at all after the first
- * visit. Network-first keeps development fresh; the cache answers when offline.
+ * The attendance database lives on the shared Node/SQLite server, so this
+ * worker only caches the installable shell and its static assets. Every API
+ * call (snapshot, mutations, live events) is deliberately left alone: a stale
+ * attendance record would be worse than an honest network error.
  *
  * The BT-821C bridge on 127.0.0.1:4190 is a different origin and is left alone.
  */
 
-const CACHE = 'attendsmart-shell-v2';
+const CACHE = 'attendease-shell-v3';
 
 const SHELL = [
   './',
@@ -17,15 +17,21 @@ const SHELL = [
   './student.html',
   './lecturer.html',
   './assets/css/app.css',
+  './assets/css/portal.css',
   './assets/js/app.js',
   './assets/js/data.js',
   './assets/js/analytics.js',
   './assets/js/gps.js',
+  './assets/js/location.js',
+  './assets/js/ble.js',
+  './assets/js/roster.js',
   './assets/js/ui.js',
   './assets/js/views/login.js',
   './assets/js/views/student.js',
   './assets/js/views/lecturer.js',
   './assets/js/views/admin.js',
+  './assets/js/views/portal-student.js',
+  './assets/js/views/portal-lecturer.js',
   './student.webmanifest',
   './lecturer.webmanifest',
   './assets/icons/student-192.png',
@@ -62,6 +68,8 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith('/api/')) return;
+  if ((request.headers.get('accept') || '').includes('text/event-stream')) return;
 
   event.respondWith(
     fetch(request)
