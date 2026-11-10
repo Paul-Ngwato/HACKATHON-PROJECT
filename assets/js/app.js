@@ -26,9 +26,12 @@ import {
   getDeviceId,
   rememberStudent,
   rememberedStudent,
+  rememberedState,
+  setDB,
   forgetStudent
 } from './data.js';
 import { ensureHost, forgetHost, isLecturerApp, isStudentApp } from './host.js';
+import { syncLecturer, pullStudentClasses, mergeCloudClasses } from './cloud.js';
 import { icon, avatar, esc, toast } from './ui.js';
 import * as Login from './views/login.js';
 import * as Admin from './views/admin.js';
@@ -456,8 +459,13 @@ async function pull() {
   try {
     const changed = await refreshDB();
     serverOnline = true;
-    if (changed) render();
-    else paintNetwork();
+    if (changed) {
+      render();
+      // A class just moved: push the finished reports while the phone is warm.
+      if (APP_ROLE === 'lecturer') syncLecturerCloud();
+    } else {
+      paintNetwork();
+    }
     return changed;
   } catch (err) {
     serverOnline = false;
@@ -748,6 +756,19 @@ async function boot() {
 
   if (needsServerSetup()) {
     if (isNativeApp()) {
+      // The lecturer's phone is out of reach. A student who has opened this
+      // register before keeps working from the last snapshot instead of being
+      // stopped by a network they cannot control.
+      if (APP_ROLE === 'student') {
+        const cached = rememberedState();
+        if (cached) {
+          setDB(cached.state);
+          serverOnline = false;
+          render();
+          refreshStudentCloud();
+          return;
+        }
+      }
       renderConnect(
         host && host.mode === 'not-found'
           ? 'No lecturer phone answered on this Wi-Fi. Ask the lecturer to open AttendEase, then search again.'
@@ -774,6 +795,32 @@ async function boot() {
 
   connectLive();
   render();
+
+  if (APP_ROLE === 'lecturer') syncLecturerCloud();
+  if (APP_ROLE === 'student') refreshStudentCloud();
+}
+
+/** The cloud is a shelf, not a dependency: failures change nothing on screen. */
+function syncLecturerCloud() {
+  const id = storedUserId();
+  if (!id) return;
+  syncLecturer(id).catch(() => {});
+}
+
+function refreshStudentCloud() {
+  const id = rememberedStudent() || storedUserId();
+  if (!id) return;
+  pullStudentClasses(id)
+    .then((payload) => {
+      if (!payload || !Array.isArray(payload.classes) || !payload.classes.length) return;
+      const db = getDB();
+      if (!db) return;
+      if (mergeCloudClasses(db, payload.classes)) {
+        setDB(db);
+        render();
+      }
+    })
+    .catch(() => {});
 }
 
 boot();

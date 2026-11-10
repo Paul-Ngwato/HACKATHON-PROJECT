@@ -11,6 +11,7 @@
  */
 
 export const STORAGE_KEY = 'attendsmart.state.v1';
+export const OFFLINE_KEY = 'attendsmart.offline.v1';
 export const USER_KEY = 'attendsmart.user.v1';
 export const DEVICE_KEY = 'attendsmart.device.v1';
 export const SERVER_KEY = 'attendsmart.server.v1';
@@ -72,6 +73,33 @@ export function serverLabel() {
   const base = serverBase();
   if (base) return base.replace(/^https?:\/\//, '');
   return typeof location !== 'undefined' ? location.host : 'not configured';
+}
+
+/**
+ * Keep the last snapshot this phone received. The register must open from it
+ * when the lecturer's phone is out of reach, so a class never depends on the
+ * network being up at 8am.
+ */
+export function rememberState(state) {
+  try {
+    if (!state || !state.revision) return;
+    localStorage.setItem(OFFLINE_KEY, JSON.stringify({ at: Date.now(), state }));
+  } catch (err) {
+    /* quota: the live copy still works for this session */
+  }
+}
+
+/** The last snapshot this phone kept, with the time it was received. */
+export function rememberedState() {
+  try {
+    const raw = localStorage.getItem(OFFLINE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.state || !parsed.state.revision) return null;
+    return parsed;
+  } catch (err) {
+    return null;
+  }
 }
 
 /** True when the bundled APK has not been pointed at a laptop yet. */
@@ -158,6 +186,7 @@ export async function initDB() {
   if (needsServerSetup()) throw new Error('server-not-configured');
   const data = await request('GET', '/api/state');
   cache = data.state;
+  rememberState(cache);
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch (err) {
@@ -171,6 +200,7 @@ export async function refreshDB() {
   const previous = cache ? cache.revision : -1;
   const data = await request('GET', '/api/state');
   cache = data.state;
+  rememberState(cache);
   return cache.revision !== previous;
 }
 
