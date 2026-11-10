@@ -19,14 +19,36 @@ import { isNativeApp, serverBase, setServerBase, clearServerBase, AUTO_KEY } fro
 const LOOPBACK = /^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/i;
 const DEFAULT_PORT = 4173;
 
+/**
+ * The Android bridge injects window.Capacitor with isNativePlatform() and a
+ * Plugins map holding every plugin the app registered natively. It does NOT
+ * inject registerPlugin() — that lives in @capacitor/core's JS, which this app
+ * does not bundle — so asking for it disabled every native call in the apps.
+ * The Plugins map is the reliable handle; registerPlugin is only a fallback.
+ */
 function nativePlugin(name) {
   const cap = typeof window !== 'undefined' ? window.Capacitor : null;
-  if (!cap || typeof cap.registerPlugin !== 'function' || !cap.isNativePlatform()) return null;
-  try {
-    return cap.registerPlugin(name);
-  } catch (err) {
-    return null;
+  if (!cap) return null;
+  const native = typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : false;
+  if (!native) return null;
+
+  if (cap.Plugins && cap.Plugins[name]) return cap.Plugins[name];
+
+  if (typeof cap.registerPlugin === 'function') {
+    try {
+      return cap.registerPlugin(name);
+    } catch (err) {
+      return null;
+    }
   }
+  return null;
+}
+
+/** Names of the plugins the bridge actually gave us, for error messages. */
+function availablePlugins() {
+  const cap = typeof window !== 'undefined' ? window.Capacitor : null;
+  const plugins = cap && cap.Plugins ? Object.keys(cap.Plugins) : [];
+  return `bridge plugins: ${plugins.length ? plugins.join(', ') : 'none'}`;
 }
 
 function role() {
@@ -69,7 +91,7 @@ export async function ensureHost() {
   if (isLecturerApp()) {
     const plugin = nativePlugin('ClassHost');
     if (!plugin) {
-      throw new Error('This build cannot host a class (ClassHost plugin missing).');
+      throw new Error(`This build cannot host a class (ClassHost plugin missing). ${availablePlugins()}`);
     }
 
     let status = null;
@@ -133,7 +155,7 @@ export async function ensureHost() {
 /** Ask the Wi-Fi for a lecturer phone. Used at boot and by the Connect screen. */
 export async function discoverHost(timeoutMs = 4500) {
   const plugin = nativePlugin('ClassFinder');
-  if (!plugin) return { found: false, error: 'ClassFinder plugin missing' };
+  if (!plugin) return { found: false, error: `ClassFinder plugin missing (${availablePlugins()})` };
   try {
     return await plugin.find({ timeoutMs });
   } catch (err) {
