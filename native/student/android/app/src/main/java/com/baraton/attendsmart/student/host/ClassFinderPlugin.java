@@ -25,6 +25,18 @@ public class ClassFinderPlugin extends Plugin {
             Discovery.Found found = discovery.discover(timeout);
 
             JSObject payload = new JSObject();
+
+            // What the search saw, so the screen can explain a failure instead
+            // of only saying "not found".
+            JSObject diag = new JSObject();
+            diag.put("nsd", discovery.nsdState);
+            diag.put("nsdError", discovery.nsdError);
+            diag.put("services", discovery.nsdServices);
+            diag.put("beacons", discovery.beaconPackets);
+            diag.put("beaconAt", discovery.beaconAt);
+            diag.put("beaconError", discovery.beaconError);
+            payload.put("diag", diag);
+
             if (found == null) {
                 payload.put("found", false);
             } else {

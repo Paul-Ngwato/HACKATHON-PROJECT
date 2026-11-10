@@ -45,6 +45,18 @@ public final class Discovery {
     private Thread beaconThread;
     private volatile boolean advertising;
 
+    /*
+     * What the last search actually saw. A failed search that only says
+     * "not found" is unactionable on a phone, so the student screen shows
+     * these numbers instead of guessing.
+     */
+    public volatile String nsdState = "not started";
+    public volatile String nsdError = "";
+    public volatile int nsdServices = 0;
+    public volatile int beaconPackets = 0;
+    public volatile long beaconAt = 0L;
+    public volatile String beaconError = "";
+
     public Discovery(Context context) {
         this.context = context.getApplicationContext();
     }
@@ -214,6 +226,10 @@ public final class Discovery {
         NsdManager.DiscoveryListener listener = null;
         WifiManager.MulticastLock multicast = null;
 
+        nsdState = "starting";
+        nsdError = "";
+        beaconError = "";
+
         try {
             if (nsd != null) {
                 listener = nsdListener(nsd, results);
@@ -235,6 +251,7 @@ public final class Discovery {
             } catch (RuntimeException ignored) {
                 // Broadcast may still arrive without the lock.
             }
+            if (nsd == null) nsdState = "unavailable";
 
             Thread beacon = new Thread(() -> listenForBeacon(results, deadline), "attendease-listen");
             beacon.setDaemon(true);
@@ -272,16 +289,19 @@ public final class Discovery {
         return new NsdManager.DiscoveryListener() {
             @Override
             public void onDiscoveryStarted(String serviceType) {
+                nsdState = "running";
             }
 
             @Override
             public void onServiceFound(NsdServiceInfo serviceInfo) {
+                nsdServices++;
                 if (serviceInfo == null || !SERVICE_TYPE.equals(serviceInfo.getServiceType())) return;
                 try {
                     nsd.resolveService(serviceInfo, new NsdManager.ResolveListener() {
                         @Override
                         public void onResolveFailed(NsdServiceInfo failed, int errorCode) {
                             // The beacon may still answer.
+                            nsdError = nsdError.isEmpty() ? "resolve code " + errorCode : nsdError;
                         }
 
                         @Override
@@ -307,6 +327,8 @@ public final class Discovery {
 
             @Override
             public void onStartDiscoveryFailed(String serviceType, int errorCode) {
+                nsdState = "failed";
+                nsdError = "start code " + errorCode;
             }
 
             @Override
@@ -353,12 +375,15 @@ public final class Discovery {
                         StandardCharsets.UTF_8);
                 Found found = parseBeacon(text, packet.getAddress());
                 if (found != null) {
+                    beaconPackets++;
+                    beaconAt = System.currentTimeMillis();
                     results.offer(found);
                     return;
                 }
             }
-        } catch (IOException ignored) {
+        } catch (IOException err) {
             // NSD may still have answered; the caller's timeout decides.
+            beaconError = err.getMessage() == null ? err.getClass().getSimpleName() : err.getMessage();
         } finally {
             if (socket != null) socket.close();
         }
