@@ -113,11 +113,27 @@ public final class ClassServer {
             socket.setTcpNoDelay(true);
             InputStream in = new BufferedInputStream(socket.getInputStream(), 8192);
             OutputStream out = new BufferedOutputStream(socket.getOutputStream(), 16384);
+            serveOne(in, out, true);
+        } catch (IOException | RuntimeException dropped) {
+            // A student walking out of range must never stop the class.
+        }
+    }
 
+    /**
+     * Answer exactly one request read from {@code in}.
+     *
+     * The Wi-Fi socket and the Bluetooth socket both end up here, so a student
+     * on either transport gets the same routes and the same rules. Bluetooth
+     * cannot carry the live event stream, so that one route is refused there.
+     *
+     * Returns false when the peer closed without sending anything, which is how
+     * the Bluetooth loop knows to let go of the socket.
+     */
+    boolean serveOne(InputStream in, OutputStream out, boolean allowEvents) throws IOException {
             String requestLine = readLine(in);
-            if (requestLine == null || requestLine.isEmpty()) return;
+            if (requestLine == null || requestLine.isEmpty()) return false;
             String[] parts = requestLine.split(" ");
-            if (parts.length < 2) return;
+            if (parts.length < 2) return false;
             String method = parts[0].toUpperCase(Locale.US);
             String target = parts[1];
 
@@ -161,18 +177,21 @@ public final class ClassServer {
 
             if ("OPTIONS".equals(method)) {
                 send(out, 204, null, new byte[0], false);
-                return;
+                return true;
             }
             if ("/api/events".equals(path) || "/api/events/".equals(path)) {
+                if (!allowEvents) {
+                    send(out, 404, JSON, "{\"ok\":false,\"error\":\"Live updates are not available over Bluetooth.\"}"
+                            .getBytes(StandardCharsets.UTF_8), false);
+                    return true;
+                }
                 serveEvents(out);
-                return;
+                return true;
             }
 
             route(method, path, parseQuery(queryString), body, out, gzip);
             out.flush();
-        } catch (IOException | RuntimeException dropped) {
-            // A student walking out of range must never stop the class.
-        }
+            return true;
     }
 
     /* ------------------------------------------------------------------ */

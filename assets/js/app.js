@@ -281,8 +281,8 @@ function renderNativeConnect(detail) {
       <div>
         <h1>One register. <em>${host ? 'This phone holds it.' : 'Found on your Wi-Fi.'}</em></h1>
         <p class="lede">${student
-          ? 'Keep Wi-Fi on. This app looks for the class on the network and connects by itself.'
-          : 'Attendance runs from this phone. Students on the same Wi-Fi find it automatically and post with the four-digit code.'}</p>
+          ? 'Nothing to type. This app finds the class on the Wi-Fi, or over Bluetooth when the network stops phones from reaching each other.'
+          : 'Attendance runs from this phone. Students find it on the Wi-Fi, or over Bluetooth when the network will not carry them.'}</p>
       </div>
       <div class="verify-chain">
         <div class="vc-item">
@@ -310,7 +310,7 @@ function renderNativeConnect(detail) {
           ? (detail ? 'Class not found yet' : 'Searching for the class…')
           : 'The server did not start'}</h2>
         <p class="sub">${student
-          ? 'The lecturer phone must be open on the same Wi-Fi as this one. Nothing to type.'
+          ? 'The lecturer phone must have the app open. The search tries the Wi-Fi first, then Bluetooth.'
           : 'This phone could not open the register port. Free up the port and try again.'}</p>
 
         ${detail ? `<div class="alert alert-red mb-16"><span class="alert-icon">${icon('alert', 16)}</span><div><div class="alert-title">Not connected</div><div class="alert-body">${esc(detail)}</div></div></div>` : ''}
@@ -328,8 +328,8 @@ function renderNativeConnect(detail) {
           : ''}
 
         <div class="auth-note">${student
-          ? 'If the search keeps failing, check that both phones are on the same Wi-Fi network and that the lecturer has the app open.'
-          : 'Keep this app open during the class. Students connect to this phone directly.'}</div>
+          ? 'If the search keeps failing, turn Bluetooth on and ask the lecturer to tap "Make this phone findable". A phone that is not paired yet asks you to pair once.'
+          : 'Keep this app open during the class. Keep Bluetooth on so students whose Wi-Fi cannot reach this phone can pair instead.'}</div>
       </div>
     </section>
   </div>`;
@@ -770,9 +770,11 @@ async function boot() {
         }
       }
       renderConnect(
-        host && host.mode === 'not-found'
-          ? 'No lecturer phone answered on this Wi-Fi. Ask the lecturer to open AttendEase, then search again.'
-          : null
+        host && host.error
+          ? host.error
+          : host && host.mode === 'not-found'
+            ? 'No lecturer phone answered over Wi-Fi or Bluetooth. Ask the lecturer to open AttendEase, then search again.'
+            : null
       );
       return;
     }

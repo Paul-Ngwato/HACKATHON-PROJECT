@@ -10,6 +10,8 @@
  * server cannot be reached the mutation throws and the UI shows the error.
  */
 
+import { btAvailable, btCall } from './bt.js';
+
 export const STORAGE_KEY = 'attendsmart.state.v1';
 export const OFFLINE_KEY = 'attendsmart.offline.v1';
 export const USER_KEY = 'attendsmart.user.v1';
@@ -138,8 +140,21 @@ export function clearServerBase() {
   }
 }
 
-async function request(method, pathname, body) {
+/**
+ * Set once a request has proved the Bluetooth lane reaches the lecturer, so
+ * the rest of the class stops waiting on a Wi-Fi socket that cannot open.
+ */
+let viaBluetooth = false;
+
+async function overWifi(method, pathname, body) {
   const base = serverBase();
+  if (base.indexOf('bluetooth.local') >= 0) {
+    // This class was found over Bluetooth, so there is no Wi-Fi address to
+    // try. Marked as a transport failure so the Bluetooth link is used.
+    const linkDown = new Error('The Bluetooth link to the lecturer phone is down. Search again.');
+    linkDown.network = true;
+    throw linkDown;
+  }
   let res;
   try {
     res = await fetch(`${base}${pathname}`, {
@@ -149,7 +164,13 @@ async function request(method, pathname, body) {
       cache: 'no-store'
     });
   } catch (err) {
-    throw new Error(`Cannot reach the AttendEase server at ${base || location.origin}. Check the Wi-Fi and the server address.`);
+    const unreachable = new Error(
+      `Cannot reach the AttendEase server at ${base || location.origin}. Check the Wi-Fi and the server address.`
+    );
+    // Only a transport failure may be retried on the other lane: the register
+    // never saw this request, so sending it again cannot post twice.
+    unreachable.network = true;
+    throw unreachable;
   }
 
   let data;
@@ -162,9 +183,59 @@ async function request(method, pathname, body) {
   if (!res.ok || data.ok === false) {
     throw new Error(data.error || `Server error ${res.status}`);
   }
+  return data;
+}
+
+/**
+ * One request, whichever lane can carry it.
+ *
+ * Wi-Fi first. When that socket cannot open and this phone has the Bluetooth
+ * client, the same request rides the Bluetooth link instead, and every later
+ * call in the class starts there.
+ */
+async function request(method, pathname, body) {
+  if (viaBluetooth && btAvailable()) {
+    try {
+      const data = await btCall(method, pathname, body);
+      if (data.state) cache = data.state;
+      return data;
+    } catch (refused) {
+      // A refusal came from the register itself; another lane would say the
+      // same thing. Only a dead link is worth retrying elsewhere.
+      if (refused && refused.register) throw refused;
+      viaBluetooth = false;
+    }
+  }
+
+  let data;
+  try {
+    data = await overWifi(method, pathname, body);
+  } catch (err) {
+    if (!err.network || !btAvailable()) throw err;
+    data = await btCall(method, pathname, body);
+    viaBluetooth = true;
+  }
+
   if (data.state) cache = data.state;
   return data;
 }
+
+/** True once this phone proved the Bluetooth lane reaches the lecturer. */
+export function usingBluetooth() {
+  return viaBluetooth;
+}
+
+/**
+ * Chosen by the finder when the Wi-Fi cannot reach a phone at all. From then
+ * on requests start on the Bluetooth lane instead of waiting for a socket
+ * that is never going to open.
+ */
+export function preferBluetooth(on = true) {
+  viaBluetooth = !!on;
+}
+
+/** Not an address: a placeholder base for a class reached over Bluetooth. */
+export const BLUETOOTH_BASE = 'http://bluetooth.local';
 
 /* ------------------------------------------------------------------ */
 /* Snapshot lifecycle                                                  */
@@ -212,6 +283,9 @@ export const reloadDB = refreshDB;
  */
 export function subscribeToState(onChange) {
   if (typeof EventSource !== 'function' || needsServerSetup()) return () => {};
+  // The live stream is a keep-open Wi-Fi socket; Bluetooth carries one
+  // request at a time, so a phone on that lane polls instead.
+  if (viaBluetooth) return () => {};
   const source = new EventSource(`${serverBase()}/api/events`);
 
   source.addEventListener('state', (event) => {

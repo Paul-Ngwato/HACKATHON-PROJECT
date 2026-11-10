@@ -12,10 +12,12 @@ import {
   createCourse,
   endSession,
   importRoster,
+  isNativeApp,
   lecturerById,
   roomFor,
   startSession
 } from '../data.js';
+import { hostStatus, isLecturerApp, makeFindable } from '../host.js';
 import { downloadCSV, esc, fmtTime, modal, toast } from '../ui.js';
 import { round1 } from '../analytics.js';
 import { scanForReceiver } from '../gps.js';
@@ -218,11 +220,27 @@ export function overview(ctx) {
   const courses = coursesForLecturer(ctx.db, ctx.user.id);
   const cards = courses.map((course) => unitCard(ctx, course)).join('');
 
+  // Only the installed lecturer app hosts a class, so the card is meaningless
+  // in the browser demo.
+  const host = isNativeApp() && isLecturerApp();
+
   return {
     html: `<div class="gov-toolbar">
         <button class="gov-btn gov-btn-green" data-action="new-unit">+ Create New Unit</button>
         <span class="gov-small gov-muted">${courses.length} unit${courses.length === 1 ? '' : 's'} on your timetable</span>
       </div>
+      ${
+        host
+          ? `<div class="gov-box mb-16">
+              <div class="gov-box-title">Bluetooth door</div>
+              <div class="gov-box-body">
+                <p class="gov-muted" id="bt-state">Checking Bluetooth…</p>
+                <button class="gov-btn" data-action="findable">Make this phone findable</button>
+                <p class="gov-small gov-muted mt-12">Students whose Wi-Fi cannot reach another phone pair with this one instead. They see the pairing request the first time; you tap Pair.</p>
+              </div>
+            </div>`
+          : ''
+      }
       ${
         cards ||
         `<div class="gov-box"><div class="gov-box-title">My Units</div><div class="gov-box-body">
@@ -230,6 +248,21 @@ export function overview(ctx) {
         </div></div>`
       }`,
     mount(root) {
+      const btState = root.querySelector('#bt-state');
+      if (btState) {
+        hostStatus().then((status) => {
+          const node = root.querySelector('#bt-state');
+          if (!node) return;
+          if (status.bluetooth) {
+            node.textContent = `On — students can pair with ${status.bluetoothName || 'this phone'}. ${status.bluetoothStudents || 0} connected now.`;
+          } else if (status.bluetoothError) {
+            node.textContent = status.bluetoothError;
+          } else {
+            node.textContent = 'Off. Students who cannot use the Wi-Fi will need it on.';
+          }
+        });
+      }
+
       if (!receiver.checked) {
         scanForReceiver().then((result) => {
           receiver = {
@@ -261,6 +294,13 @@ export function overview(ctx) {
         if (!target) return;
         const action = target.dataset.action;
         if (action === 'new-unit') openCreateUnit(ctx);
+        else if (action === 'findable') makeFindable().then((result) => {
+          if (result.findable) {
+            toast('Findable for 5 minutes', { message: 'Students can now see this phone in a Bluetooth search.' });
+          } else {
+            toast('Not findable', { message: result.error || 'Android did not open a Bluetooth window.', tone: 'error' });
+          }
+        });
         else if (action === 'start') startUnit(ctx, target.dataset.course, target);
         else if (action === 'stop') stopUnit(ctx, target.dataset.session, target);
         else if (action === 'excel') exportUnit(ctx, target.dataset.course);

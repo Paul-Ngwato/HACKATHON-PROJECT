@@ -14,7 +14,15 @@
  * server" is in the installed apps.
  */
 
-import { isNativeApp, serverBase, setServerBase, clearServerBase, AUTO_KEY } from './data.js';
+import {
+  BLUETOOTH_BASE,
+  isNativeApp,
+  preferBluetooth,
+  serverBase,
+  setServerBase,
+  clearServerBase,
+  AUTO_KEY
+} from './data.js';
 
 const LOOPBACK = /^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/i;
 const DEFAULT_PORT = 4173;
@@ -107,6 +115,16 @@ export async function ensureHost() {
       throw new Error('The class server did not start on this phone.');
     }
 
+    // The Bluetooth door needs a runtime permission the first time. A refusal
+    // or a radio that will not open leaves the Wi-Fi door working.
+    if (!status.bluetooth) {
+      try {
+        status = await plugin.enableBluetooth();
+      } catch (err) {
+        /* the class still runs over Wi-Fi */
+      }
+    }
+
     const url = status.url || `http://127.0.0.1:${status.port || DEFAULT_PORT}`;
     setServerBase(url, true);
     resolved = {
@@ -115,6 +133,9 @@ export async function ensureHost() {
       url,
       port: status.port || DEFAULT_PORT,
       addresses: Array.isArray(status.addresses) ? status.addresses : [],
+      bluetooth: status.bluetooth === true,
+      bluetoothName: status.bluetoothName || null,
+      bluetoothError: status.bluetoothError || null,
       revision: status.revision
     };
     return resolved;
@@ -133,7 +154,25 @@ export async function ensureHost() {
 
     const found = await discoverHost(4500);
     if (found && found.found) {
+      // Bluetooth has no address to remember: the register is reached through
+      // the paired phone, so the base is a placeholder and every request goes
+      // down that link instead of the network.
+      if (found.via === 'bluetooth') {
+        setServerBase(BLUETOOTH_BASE, true);
+        preferBluetooth(true);
+        resolved = {
+          mode: 'bluetooth',
+          running: true,
+          url: '',
+          device: found.host || '',
+          name: found.name || 'AttendEase class',
+          via: 'bluetooth'
+        };
+        return resolved;
+      }
+
       setServerBase(found.url, true);
+      preferBluetooth(false);
       resolved = {
         mode: 'discovered',
         running: true,
@@ -144,7 +183,7 @@ export async function ensureHost() {
       return resolved;
     }
 
-    resolved = { mode: 'not-found', running: false, url: '' };
+    resolved = { mode: 'not-found', running: false, url: '', error: (found && found.error) || null };
     return resolved;
   }
 
@@ -174,6 +213,22 @@ export async function hostStatus() {
   }
 }
 
+/**
+ * Show this phone to students who have never paired with it. Bluetooth only
+ * lets two phones talk after pairing, so a new class needs this window open.
+ */
+export async function makeFindable() {
+  const plugin = nativePlugin('ClassHost');
+  if (!plugin || typeof plugin.discoverable !== 'function') {
+    return { findable: false, error: 'This build cannot open a Bluetooth window.' };
+  }
+  try {
+    return await plugin.discoverable();
+  } catch (err) {
+    return { findable: false, error: err && err.message ? err.message : 'Android refused the Bluetooth window.' };
+  }
+}
+
 export async function stopHost() {
   const plugin = nativePlugin('ClassHost');
   if (!plugin) return { running: false };
@@ -190,5 +245,7 @@ export async function stopHost() {
 /** Forget the auto-detected address so the next boot searches again. */
 export function forgetHost() {
   resolved = null;
-  if (LOOPBACK.test(serverBase())) clearServerBase();
+  preferBluetooth(false);
+  const base = serverBase();
+  if (LOOPBACK.test(base) || base.indexOf('bluetooth.local') >= 0) clearServerBase();
 }
