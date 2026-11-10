@@ -12,6 +12,7 @@ import {
   initDB,
   refreshDB,
   subscribeToState,
+  isNativeApp,
   needsServerSetup,
   serverBase,
   serverLabel,
@@ -27,6 +28,7 @@ import {
   rememberedStudent,
   forgetStudent
 } from './data.js';
+import { ensureHost, forgetHost, isLecturerApp, isStudentApp } from './host.js';
 import { icon, avatar, esc, toast } from './ui.js';
 import * as Login from './views/login.js';
 import * as Admin from './views/admin.js';
@@ -252,7 +254,115 @@ function errorScreen(err) {
 /* Connect to the shared backend                                       */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Installed apps have nothing to type: the lecturer's phone runs the register
+ * and students find it on the same Wi-Fi. The typed-address screen stays for
+ * the browser demo, where a person really does start the server.
+ */
 function renderConnect(detail) {
+  if (isNativeApp()) {
+    renderNativeConnect(detail);
+    return;
+  }
+  renderWebConnect(detail);
+}
+
+function renderNativeConnect(detail) {
+  cleanup();
+  const student = isStudentApp();
+  const host = isLecturerApp();
+
+  app.innerHTML = `<div class="auth">
+    <section class="auth-hero">
+      <div class="hero-eyebrow"><span class="dot"></span>Baraton University · Smart attendance</div>
+      <div>
+        <h1>One register. <em>${host ? 'This phone holds it.' : 'Found on your Wi-Fi.'}</em></h1>
+        <p class="lede">${student
+          ? 'Keep Wi-Fi on. This app looks for the class on the network and connects by itself.'
+          : 'Attendance runs from this phone. Students on the same Wi-Fi find it automatically and post with the four-digit code.'}</p>
+      </div>
+      <div class="verify-chain">
+        <div class="vc-item">
+          <span class="ic">${icon(host ? 'play' : 'users', 17)}</span>
+          <div><div class="t">${host ? 'Lecturer opens a window' : 'Find the class'}</div><div class="d">${host ? 'The register is on this phone' : 'Automatic on the class Wi-Fi'}</div></div>
+          <span class="check">${icon('check', 16)}</span>
+        </div>
+        <div class="vc-item">
+          <span class="ic">${icon('key', 17)}</span>
+          <div><div class="t">Four-digit code</div><div class="d">Issued for this window only</div></div>
+          <span class="check">${icon('check', 16)}</span>
+        </div>
+        <div class="vc-item">
+          <span class="ic">${icon('users', 17)}</span>
+          <div><div class="t">Every post is checked</div><div class="d">Enrolled, inside the hall, once</div></div>
+          <span class="check">${icon('check', 16)}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="auth-panel">
+      <div class="auth-card">
+        <div class="eyebrow">${student ? 'Class Wi-Fi' : 'Class host'}</div>
+        <h2>${student
+          ? (detail ? 'Class not found yet' : 'Searching for the class…')
+          : 'The server did not start'}</h2>
+        <p class="sub">${student
+          ? 'The lecturer phone must be open on the same Wi-Fi as this one. Nothing to type.'
+          : 'This phone could not open the register port. Free up the port and try again.'}</p>
+
+        ${detail ? `<div class="alert alert-red mb-16"><span class="alert-icon">${icon('alert', 16)}</span><div><div class="alert-title">Not connected</div><div class="alert-body">${esc(detail)}</div></div></div>` : ''}
+
+        <button class="btn btn-primary btn-block" id="retry">${icon('refresh', 16)} ${student ? 'Search again' : 'Try again'}</button>
+
+        ${student
+          ? `<details class="mt-16"><summary class="sub">Enter the address manually</summary>
+              <div class="field mt-12">
+                <label for="server-url">Server address</label>
+                <input class="input" id="server-url" value="${esc(serverBase() || '')}" placeholder="http://192.168.1.20:4173" inputmode="url" autocomplete="off" spellcheck="false">
+              </div>
+              <button class="btn btn-soft btn-block" id="connect-manual">${icon('plug', 16)} Connect</button>
+            </details>`
+          : ''}
+
+        <div class="auth-note">${student
+          ? 'If the search keeps failing, check that both phones are on the same Wi-Fi network and that the lecturer has the app open.'
+          : 'Keep this app open during the class. Students connect to this phone directly.'}</div>
+      </div>
+    </section>
+  </div>`;
+
+  const retry = document.getElementById('retry');
+  if (retry) {
+    retry.addEventListener('click', async () => {
+      retry.disabled = true;
+      retry.innerHTML = student ? 'Searching…' : 'Starting…';
+      if (host) {
+        location.reload();
+        return;
+      }
+      forgetHost();
+      await boot();
+    });
+  }
+
+  const manual = document.getElementById('connect-manual');
+  if (manual) {
+    manual.addEventListener('click', async () => {
+      const input = document.getElementById('server-url');
+      try {
+        setServerBase(input.value);
+      } catch (err) {
+        toast('Invalid address', { message: err.message, tone: 'error' });
+        return;
+      }
+      manual.disabled = true;
+      manual.innerHTML = 'Connecting…';
+      await boot();
+    });
+  }
+}
+
+function renderWebConnect(detail) {
   cleanup();
   const value = serverBase() || '';
   const showReset = !needsServerSetup();
@@ -626,7 +736,25 @@ window.addEventListener('appinstalled', () => {
 /* ------------------------------------------------------------------ */
 
 async function boot() {
+  // In the APKs the server is the lecturer's own phone (host) or a phone found
+  // on the class Wi-Fi (student). This must settle before the first fetch.
+  let host = null;
+  try {
+    host = await ensureHost();
+  } catch (err) {
+    renderConnect(err && err.message ? err.message : 'The class host could not start on this phone.');
+    return;
+  }
+
   if (needsServerSetup()) {
+    if (isNativeApp()) {
+      renderConnect(
+        host && host.mode === 'not-found'
+          ? 'No lecturer phone answered on this Wi-Fi. Ask the lecturer to open AttendEase, then search again.'
+          : null
+      );
+      return;
+    }
     renderConnect('This app is bundled without a server address. Enter the laptop address to continue.');
     return;
   }

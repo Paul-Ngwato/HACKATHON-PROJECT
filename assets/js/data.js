@@ -14,6 +14,7 @@ export const STORAGE_KEY = 'attendsmart.state.v1';
 export const USER_KEY = 'attendsmart.user.v1';
 export const DEVICE_KEY = 'attendsmart.device.v1';
 export const SERVER_KEY = 'attendsmart.server.v1';
+export const AUTO_KEY = 'attendsmart.autohost.v1';
 export const VERSION = 3;
 
 export const LATE_GRACE_MIN = 5;
@@ -79,7 +80,7 @@ export function needsServerSetup() {
   return isNativeApp() || (typeof location !== 'undefined' && location.protocol === 'file:');
 }
 
-export function setServerBase(value) {
+export function setServerBase(value, auto = false) {
   let raw = String(value || '').trim();
   if (!raw) throw new Error('Enter the server address shown on the laptop.');
   if (!/^https?:\/\//i.test(raw)) raw = `http://${raw}`;
@@ -93,6 +94,7 @@ export function setServerBase(value) {
   const clean = `${parsed.protocol}//${parsed.host}`;
   try {
     localStorage.setItem(SERVER_KEY, clean);
+    localStorage.setItem(AUTO_KEY, auto ? '1' : '0');
   } catch (err) {
     /* ignore */
   }
@@ -102,6 +104,7 @@ export function setServerBase(value) {
 export function clearServerBase() {
   try {
     localStorage.removeItem(SERVER_KEY);
+    localStorage.removeItem(AUTO_KEY);
   } catch (err) {
     /* ignore */
   }
