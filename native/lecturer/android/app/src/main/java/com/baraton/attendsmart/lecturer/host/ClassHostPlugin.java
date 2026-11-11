@@ -38,7 +38,11 @@ import java.util.Enumeration;
  * cannot reach another client. Both answer the same routes.
  */
 @CapacitorPlugin(name = "ClassHost", permissions = {
-        @Permission(alias = "bluetooth", strings = { Manifest.permission.BLUETOOTH_CONNECT })
+        @Permission(alias = "bluetooth", strings = { Manifest.permission.BLUETOOTH_CONNECT }),
+        // Being discoverable is a separate grant on Android 12+. Without it
+        // "Make this phone findable" was refused, so no new student could ever
+        // find the register over Bluetooth.
+        @Permission(alias = "advertise", strings = { Manifest.permission.BLUETOOTH_ADVERTISE })
 })
 public class ClassHostPlugin extends Plugin {
 
@@ -126,6 +130,11 @@ public class ClassHostPlugin extends Plugin {
             return;
         }
 
+        if (Build.VERSION.SDK_INT >= 31 && getPermissionState("advertise") != PermissionState.GRANTED) {
+            requestPermissionForAlias("advertise", call, "afterAdvertisePermission");
+            return;
+        }
+
         Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
         intent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
         startActivityForResult(call, intent, "afterDiscoverable");
@@ -139,6 +148,12 @@ public class ClassHostPlugin extends Plugin {
         payload.put("findable", seconds > 0);
         payload.put("seconds", Math.max(0, seconds));
         call.resolve(payload);
+    }
+
+    /** Back from the advertise grant: now open the five-minute window. */
+    @PermissionCallback
+    private void afterAdvertisePermission(PluginCall call) {
+        discoverable(call);
     }
 
     @PluginMethod

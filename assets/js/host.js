@@ -83,6 +83,62 @@ function autoFlag() {
 let resolved = null;
 
 /**
+ * Take a discovery answer and make it the base every later request uses.
+ * Bluetooth has no address to remember, so it gets a placeholder base and the
+ * request layer routes everything down that link instead of the network.
+ */
+function adopt(found) {
+  if (found.via === 'bluetooth') {
+    setServerBase(BLUETOOTH_BASE, true);
+    preferBluetooth(true);
+    resolved = {
+      mode: 'bluetooth',
+      running: true,
+      url: '',
+      device: found.host || '',
+      name: found.name || 'AttendEase class',
+      via: 'bluetooth'
+    };
+    return resolved;
+  }
+
+  setServerBase(found.url, true);
+  preferBluetooth(false);
+  resolved = {
+    mode: 'discovered',
+    running: true,
+    url: found.url,
+    name: found.name || 'AttendEase class',
+    via: found.via || 'nsd'
+  };
+  return resolved;
+}
+
+/**
+ * Search one lane on purpose, because the student chose it: Wi-Fi only, or
+ * Bluetooth only. The automatic search at boot tries Wi-Fi and then Bluetooth,
+ * which is why a network that isolates phones looked like a dead app.
+ */
+export async function scanLane(lane) {
+  const plugin = nativePlugin('ClassFinder');
+  if (!plugin) return { found: false, error: `ClassFinder plugin missing (${availablePlugins()})` };
+
+  const bluetooth = lane === 'bluetooth';
+  let found;
+  try {
+    found = await plugin.find({
+      timeoutMs: bluetooth ? 12000 : 4000,
+      lane: bluetooth ? 'bluetooth' : 'wifi'
+    });
+  } catch (err) {
+    return { found: false, error: err && err.message ? err.message : 'The search failed.' };
+  }
+
+  if (found && found.found) return adopt(found);
+  return { found: false, error: (found && found.error) || null };
+}
+
+/**
  * Make the app ready to talk to a server. Idempotent, and never called twice.
  *
  * Lecturer → start hosting, point this app at loopback.
@@ -155,35 +211,8 @@ export async function ensureHost() {
     // A short first search: the register either answers quickly or it is not
     // there. Long searches left the app sitting on a blank screen.
     const found = await discoverHost(2500);
-    if (found && found.found) {
-      // Bluetooth has no address to remember: the register is reached through
-      // the paired phone, so the base is a placeholder and every request goes
-      // down that link instead of the network.
-      if (found.via === 'bluetooth') {
-        setServerBase(BLUETOOTH_BASE, true);
-        preferBluetooth(true);
-        resolved = {
-          mode: 'bluetooth',
-          running: true,
-          url: '',
-          device: found.host || '',
-          name: found.name || 'AttendEase class',
-          via: 'bluetooth'
-        };
-        return resolved;
-      }
+    if (found && found.found) return adopt(found);
 
-      setServerBase(found.url, true);
-      preferBluetooth(false);
-      resolved = {
-        mode: 'discovered',
-        running: true,
-        url: found.url,
-        name: found.name || 'AttendEase class',
-        via: found.via || 'nsd'
-      };
-      return resolved;
-    }
 
     resolved = { mode: 'not-found', running: false, url: '', error: (found && found.error) || null };
     return resolved;

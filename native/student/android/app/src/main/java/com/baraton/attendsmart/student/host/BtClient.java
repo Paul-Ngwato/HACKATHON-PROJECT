@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.ParcelUuid;
 
 import androidx.core.content.ContextCompat;
 
@@ -112,6 +113,13 @@ public final class BtClient {
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         if (adapter == null) throw new IOException("This phone has no Bluetooth radio.");
 
+        // A scan in progress makes every connect attempt slow or fail.
+        try {
+            adapter.cancelDiscovery();
+        } catch (SecurityException ignored) {
+            // nothing to cancel
+        }
+
         // 1. the phone that hosted the last class
         String remembered = prefs().getString(KEY_ADDRESS, null);
         if (remembered != null) {
@@ -128,7 +136,10 @@ public final class BtClient {
         for (BluetoothDevice device : bonded(adapter)) {
             paired.add(device.getAddress());
             if (device.getAddress().equals(remembered)) continue;
-            if (dial(device, 3500)) return new Found(deviceName, address);
+            // A phone with earbuds, a car and a watch paired would otherwise
+            // spend a dial timeout on each before ever reaching the lecturer.
+            if (!servesRegister(device)) continue;
+            if (dial(device, 1200)) return new Found(deviceName, address);
         }
 
         // 3. scan, then pair with whoever is advertising the register
@@ -384,6 +395,23 @@ public final class BtClient {
             }
         }
         return false;
+    }
+
+    /**
+     * Does this paired phone advertise the register's SDP record? A null cache
+     * means Android has not asked yet, which is worth one quick attempt.
+     */
+    private boolean servesRegister(BluetoothDevice device) {
+        try {
+            ParcelUuid[] uuids = device.getUuids();
+            if (uuids == null) return true;
+            for (ParcelUuid uuid : uuids) {
+                if (SERVICE_UUID.equals(uuid.getUuid())) return true;
+            }
+            return false;
+        } catch (SecurityException denied) {
+            return true;
+        }
     }
 
     private String nameOf(BluetoothDevice device) {

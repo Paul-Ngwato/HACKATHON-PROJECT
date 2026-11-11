@@ -119,6 +119,8 @@ public class ClassFinderPlugin extends Plugin {
 
     private void search(PluginCall call) {
         final long timeout = call.getLong("timeoutMs", 4000L);
+        // "wifi" or "bluetooth" when the student picked a lane; "auto" at boot.
+        final String lane = call.getString("lane", "auto");
 
         getBridge().execute(() -> {
             try {
@@ -133,21 +135,33 @@ public class ClassFinderPlugin extends Plugin {
                 }
 
                 JSObject diag = new JSObject();
-                if (discovery == null) discovery = new Discovery(getContext());
+                boolean wifiWanted = !"bluetooth".equals(lane);
+                boolean bluetoothWanted = !"wifi".equals(lane);
+                diag.put("lane", lane);
 
-                Discovery.Found found = discovery.discover(timeout);
-                diag.put("nsd", discovery.nsdState);
-                diag.put("nsdError", discovery.nsdError);
-                diag.put("services", discovery.nsdServices);
-                diag.put("beacons", discovery.beaconPackets);
+                if (wifiWanted) {
+                    if (discovery == null) discovery = new Discovery(getContext());
 
-                if (found != null) {
-                    answer(call, found.url(), found.host, found.port, found.name, found.via, null);
-                    return;
+                    Discovery.Found found = discovery.discover(timeout);
+                    diag.put("nsd", discovery.nsdState);
+                    diag.put("nsdError", discovery.nsdError);
+                    diag.put("services", discovery.nsdServices);
+                    diag.put("beacons", discovery.beaconPackets);
+
+                    if (found != null) {
+                        answer(call, found.url(), found.host, found.port, found.name, found.via, null);
+                        return;
+                    }
                 }
 
                 // The Wi-Fi found nothing, or found something this phone cannot
                 // open. Bluetooth does not need the network at all.
+                if (!bluetoothWanted) {
+                    diag.put("bluetooth", "Not tried: you chose the Wi-Fi search.");
+                    answer(call, null, null, 0, null, null, diag);
+                    return;
+                }
+
                 if (bluetooth == null) bluetooth = new BtClient(getContext());
                 String blocked = bluetooth.problem();
                 if (blocked != null) {

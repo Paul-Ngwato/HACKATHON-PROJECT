@@ -103,24 +103,33 @@ function pctCell(value) {
 
 function scanningBox() {
   return `<div class="gov-box">
-    <div class="gov-box-title">Step 1 - Bluetooth Scan</div>
+    <div class="gov-box-title">Step 1 - Scan for the Class</div>
     <div class="gov-box-body">
       <p class="gov-center gov-muted">Scanning for nearby lectures... Please wait.</p>
       <div class="gov-radar">${icon('bluetooth', 30)}</div>
       <div class="gov-center gov-status" id="scan-status">Scanning...</div>
       <div class="gov-progress"><i id="scan-bar" style="width:6%"></i></div>
       <div class="gov-center gov-small gov-muted" id="scan-pct">6%</div>
+      <div class="gov-actions" style="justify-content: center; margin-top: 10px">
+        <button class="gov-btn" id="scan-wifi">SCAN WI-FI</button>
+        <button class="gov-btn" id="scan-bt">SCAN BLUETOOTH</button>
+      </div>
+      <p class="gov-center gov-small gov-muted" id="scan-note">
+        Pick the lane to the lecturer's register. Wi-Fi is faster and carries the
+        whole class at once; Bluetooth works when the campus network isolates
+        phones from each other.
+      </p>
       ${
         bleSupport() !== 'none'
           ? `<div class="gov-center" style="margin-top:10px">
-               <button class="gov-btn" id="ble-scan">SCAN WITH BLUETOOTH</button>
+               <button class="gov-btn" id="ble-scan">CHECK CLASS BEACON</button>
              </div>
              <p class="gov-center gov-small gov-muted" id="ble-note">${
                bleSupport() === 'native'
-                 ? 'Bluetooth ready on this phone.'
-                 : 'Bluetooth ready — the browser will ask which beacon to use.'
+                 ? 'Beacon scanning is ready on this phone.'
+                 : 'Beacon scanning will ask which device to use.'
              }</p>`
-          : `<p class="gov-center gov-small gov-muted" id="ble-note">Bluetooth scanning is not available in this browser. The automatic scan above still finds your lecture.</p>`
+          : `<p class="gov-center gov-small gov-muted" id="ble-note">Beacon scanning is not available in this browser.</p>`
       }
     </div>
   </div>`;
@@ -245,6 +254,10 @@ export function checkin(ctx) {
         startScan(ctx, root);
         const bleButton = root.querySelector('#ble-scan');
         if (bleButton) bleButton.addEventListener('click', () => bleScan(root, ctx));
+        const wifiButton = root.querySelector('#scan-wifi');
+        if (wifiButton) wifiButton.addEventListener('click', () => laneScan(root, ctx, 'wifi'));
+        const btButton = root.querySelector('#scan-bt');
+        if (btButton) btButton.addEventListener('click', () => laneScan(root, ctx, 'bluetooth'));
         return;
       }
       wire(root, ctx, session);
@@ -326,6 +339,43 @@ async function bleScan(root, ctx) {
   } else {
     say(result.message);
   }
+}
+
+/**
+ * Search one transport because the student asked for it. The boot scan tries
+ * Wi-Fi and only then Bluetooth, so on a network that isolates clients the
+ * student waited out both before being told anything.
+ */
+async function laneScan(root, ctx, lane) {
+  const note = root.querySelector('#scan-note');
+  const say = (text) => {
+    if (note && note.isConnected) note.textContent = text;
+  };
+
+  say(lane === 'wifi'
+    ? 'Searching the class Wi-Fi…'
+    : 'Searching Bluetooth… this can take a few seconds while the phones pair.');
+
+  const { scanLane } = await import('../host.js');
+  const result = await scanLane(lane);
+
+  if (result && result.found) {
+    say(`Found ${result.name || 'the class register'} over ${
+      result.via === 'bluetooth' ? 'Bluetooth' : 'Wi-Fi'
+    }. Loading your lecture…`);
+    state.phase = 'idle';
+    scanDeadline = Date.now();
+    await finishScan(ctx, root);
+    return;
+  }
+
+  say(
+    result && result.error
+      ? result.error
+      : lane === 'bluetooth'
+        ? 'No lecturer phone answered over Bluetooth. Ask the lecturer to open AttendEase and tap "Make this phone findable", then search again.'
+        : 'No lecturer phone answered on the Wi-Fi. If this network isolates phones, use SCAN BLUETOOTH.'
+  );
 }
 
 function wire(root, ctx, session) {
