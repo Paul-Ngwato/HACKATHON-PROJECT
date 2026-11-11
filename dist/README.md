@@ -26,6 +26,8 @@ All of it describes the code in this repository as it actually is, not an aspira
 | [AttendEase-Business-Model.md](AttendEase-Business-Model.md) | Who pays, how much, why now, what it costs to serve, and what the pilot has to prove. |
 | [AttendEase-Code-Tour.md](AttendEase-Code-Tour.md) | Where every file is, what it does, and how one check-in travels from a student's thumb to the lecturer's screen — over Wi-Fi and over Bluetooth. |
 | [AttendEase-Build-API-QA.md](AttendEase-Build-API-QA.md) | How the APK came to exist step by step, the complete API of all three surfaces, the process, the evidence, and twenty prepared answers. |
+| [AttendEase-Workflow.md](AttendEase-Workflow.md) | The change loop, the verification gates, the release process, and the demo-day runbook with its fallback ladder. |
+| [AttendEase-Issues-Log.md](AttendEase-Issues-Log.md) | All twenty issues on one page with how each was verified, plus the open gaps that are still owed. |
 
 Also in this folder: `AttendSmart-Student-debug.apk` and `AttendSmart-Lecturer-debug.apk` — the
 installable builds, and `AttendSmart-source.zip`, a snapshot of the source these were built from.
