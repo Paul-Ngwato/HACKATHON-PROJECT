@@ -22,6 +22,7 @@ All of it describes the code in this repository as it actually is, not an aspira
 
 | File | Answers |
 |---|---|
+| [AttendEase-How-It-Works-Simply.md](AttendEase-How-It-Works-Simply.md) | **Start here if you are not a developer.** The whole system in plain words: where the idea came from, how the phones talk over Wi-Fi and Bluetooth, the invisible machinery nobody sees, where location and the graphics come from, how the cloud shelf connects, what the school saves and earns, and how Bluetooth fits into a real class. |
 | [AttendEase-Pitch-5-Minutes.md](AttendEase-Pitch-5-Minutes.md) | What do I say, in what order, for exactly five minutes — plus the demo beats that win it and the answers to the questions judges actually ask. |
 | [AttendEase-Business-Model.md](AttendEase-Business-Model.md) | Who pays, how much, why now, what it costs to serve, and what the pilot has to prove. |
 | [AttendEase-Code-Tour.md](AttendEase-Code-Tour.md) | Where every file is, what it does, and how one check-in travels from a student's thumb to the lecturer's screen — over Wi-Fi and over Bluetooth. |
