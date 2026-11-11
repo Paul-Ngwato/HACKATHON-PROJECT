@@ -61,6 +61,11 @@ No passwords — the seeded accounts exist so a demo can switch roles in two tap
 Both are the same government-portal interface (green header, beige page, boxy tables, flat grey
 buttons) and both are real Capacitor builds with location and Bluetooth permissions declared.
 
+The **lecturer APK hosts the register itself** on port 4173 and advertises it (NSD `_attendease._tcp.`
+plus a UDP beacon on 4174); the student APK finds it over the campus Wi-Fi, over Bluetooth RFCOMM when
+the network isolates clients, or on loopback when both apps are on one handset. The laptop server in
+`server.js` remains for a desktop demo and is not needed to run a class.
+
 ```bash
 npm run mobile:stage        # stage the web shell into native/*/www
 cd native/student  && npx cap sync android && cd android && ./gradlew assembleDebug
@@ -81,6 +86,7 @@ The full toolchain steps (JDK, Android SDK, signing) are in
 | [docs/BUSINESS-MODEL.md](docs/BUSINESS-MODEL.md) | problem, market, pricing, unit economics, go-to-market, risks |
 | [docs/PRESENTATION.md](docs/PRESENTATION.md) | slide outline, 3-minute demo script, judge Q&A |
 | [docs/ISSUES-SOLVED.md](docs/ISSUES-SOLVED.md) | the engineering log: every bug found and how it was fixed and verified |
+| [dist/](dist/) | the pitch pack: business model, five-minute script, code tour, build/API/Q&A — written against the phone-hosted build |
 
 ---
 

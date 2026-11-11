@@ -229,6 +229,88 @@ remain (no hardware test, no lecturer advertising, single-file database) are sta
 
 ---
 
+## 16. Every native call silently did nothing inside the APK
+
+**Symptom.** The installed apps could not start a host or find one; nothing threw, the plugin
+lookups simply produced `undefined`.
+
+**Cause.** The code assumed `Capacitor.registerPlugin()` existed. The injected Android bridge ships
+`Capacitor.isNativePlatform()` and a `Capacitor.Plugins` map, but not `registerPlugin` — that lives in
+`@capacitor/core`'s JS bundle, which this app deliberately does not ship.
+
+**Fix.** `nativePlugin()` in `assets/js/host.js` (and the same lookup in `bt.js` and
+`ClassFinderPlugin`'s callers) reads `Capacitor.Plugins[name]` first and only falls back to
+`registerPlugin`. Failures now name the plugins the bridge actually exposed.
+
+**Verified.** Error text changed from a bare failure to `bridge plugins: ClassHost, ClassFinder, …`,
+and the host started on device-less inspection of the packaged bundle.
+
+---
+
+## 17. Discovery found the lecturer phone and the socket to it still never opened
+
+**Symptom.** The student app reported `http://192.168.1.8:4173` as found, then every request failed.
+
+**Cause.** The campus access point isolates clients: two phones on the same SSID cannot talk to each
+other even though mDNS and the UDP beacon get through.
+
+**Fix.** A second transport with no middlebox to configure. `BtServer` (lecturer) listens on RFCOMM
+with a fixed service UUID; `BtClient` (student) remembers the phone, falls back to bonded devices,
+then scans, bonds and dials. `assets/js/bt.js` exposes it as `btFind`/`btCall`, and `data.js` retries
+a failed fetch exactly once on that lane.
+
+**Verified.** The JVM transport tests exercise the same handler the Bluetooth socket calls. Not
+verified on two physical handsets — stated as such in `README.md`.
+
+---
+
+## 18. Bluetooth could carry a request but not the register's live feed
+
+**Symptom (by design, once found).** The same routes had to exist on both transports, but a
+subscribe-forever SSE stream over a serial socket would stall every other student.
+
+**Fix.** `ClassServer.serveOne(InputStream, OutputStream, boolean allowEvents)` is called by the TCP
+socket with events allowed and by the Bluetooth socket with them refused — `/api/events` answers
+`404 Live updates are not available over Bluetooth.` The student UI polls instead, and the JS never
+mistakes that refusal for a failed request.
+
+**Verified.** `TransportTest`: health, full state, uncompressed body, events-refused, several
+requests on one stream, closed stream → `false`. 6 tests, 0 failures.
+
+---
+
+## 19. Demonstrating on a single handset: the student app could not see the register beside it
+
+**Symptom.** With both APKs installed on one phone, the student app searched the Wi-Fi and Bluetooth
+and found nothing, even though the lecturer app was hosting on the same device.
+
+**Cause.** Discovery assumed two devices. Loopback was never tried.
+
+**Fix.** `ClassFinderPlugin.find()` now probes `http://127.0.0.1:4173/api/health` first and, if a
+register answers, returns it as `via: "loopback"` with no discovery at all. Nothing changes when the
+register is on another phone.
+
+**Verified.** Both APKs rebuilt (`BUILD SUCCESSFUL`, tests 8/8 and 6/6), the probe is present in
+`classes8.dex` and the new copy is inside the packaged `app.js`. The single-handset flow itself still
+needs a device to be walked through.
+
+---
+
+## 20. The documentation described a different product from the code
+
+**Symptom.** `README.md` and `docs/` described a laptop server per campus; the code had moved the
+register onto the lecturer's phone, added a Bluetooth transport and a cloud shelf. A judge reading
+the README would have asked about a server that no longer matters.
+
+**Fix.** `dist/` now holds a pitch pack written against the code as it is: business model, a
+timed five-minute script, a file-by-file code tour, and the build/API/Q&A document, including the
+three surfaces and what is honestly not verified.
+
+**Verified.** Every file path, endpoint, port and test count in the pack was read from the source or
+from a build, not from the older docs.
+
+---
+
 ## What is not solved yet (and is written down as such)
 
 | Gap | Why it matters | Plan |
