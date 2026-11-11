@@ -328,7 +328,7 @@ function renderNativeConnect(detail) {
           : ''}
 
         <div class="auth-note">${student
-          ? 'If the search keeps failing, turn Bluetooth on and ask the lecturer to tap "Make this phone findable". A phone that is not paired yet asks you to pair once.'
+          ? 'If the search keeps failing, turn Bluetooth on and ask the lecturer to tap "Make this phone findable". A phone that is not paired yet asks you to pair once. Both apps on one handset work too: the student app finds the register on the same phone.'
           : 'Keep this app open during the class. Keep Bluetooth on so students whose Wi-Fi cannot reach this phone can pair instead.'}</div>
       </div>
     </section>

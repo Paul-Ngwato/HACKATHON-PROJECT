@@ -12,7 +12,12 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Finds the lecturer's phone and talks to it.
@@ -32,6 +37,9 @@ import java.io.IOException;
         })
 })
 public class ClassFinderPlugin extends Plugin {
+
+    private static final int LOOPBACK_PORT = 4173;
+    private static final String LOOPBACK_URL = "http://127.0.0.1:" + LOOPBACK_PORT;
 
     private Discovery discovery;
     private BtClient bluetooth;
@@ -107,6 +115,14 @@ public class ClassFinderPlugin extends Plugin {
             try {
                 if (call.isReleased()) return;
 
+                // Both apps on one handset: the lecturer app is already
+                // holding the register on this phone's loopback, so there is
+                // nothing to discover and no network to depend on.
+                if (registerOnThisPhone()) {
+                    answer(call, LOOPBACK_URL, "127.0.0.1", LOOPBACK_PORT, "This phone", "loopback", null);
+                    return;
+                }
+
                 JSObject diag = new JSObject();
                 if (discovery == null) discovery = new Discovery(getContext());
 
@@ -144,6 +160,34 @@ public class ClassFinderPlugin extends Plugin {
                 call.reject("Could not search the class Wi-Fi: " + err.getMessage());
             }
         });
+    }
+
+    /** Does the lecturer app on this same handset answer on loopback? */
+    private boolean registerOnThisPhone() {
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) new URL(LOOPBACK_URL + "/api/health").openConnection();
+            connection.setConnectTimeout(700);
+            connection.setReadTimeout(700);
+            connection.setUseCaches(false);
+            if (connection.getResponseCode() != 200) return false;
+            String body = readSmall(connection.getInputStream());
+            return body != null && body.contains("\"revision\"");
+        } catch (IOException | RuntimeException nothingThere) {
+            return false;
+        } finally {
+            if (connection != null) connection.disconnect();
+        }
+    }
+
+    private static String readSmall(InputStream stream) throws IOException {
+        try (InputStream in = stream) {
+            ByteArrayOutputStream out = new ByteArrayOutputStream(256);
+            byte[] buffer = new byte[512];
+            int read;
+            while ((read = in.read(buffer)) > 0 && out.size() < 8192) out.write(buffer, 0, read);
+            return new String(out.toByteArray(), StandardCharsets.UTF_8);
+        }
     }
 
     private void answer(PluginCall call, String url, String host, int port, String name, String via, JSObject diag) {
