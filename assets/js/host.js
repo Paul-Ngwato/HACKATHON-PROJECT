@@ -152,7 +152,9 @@ export async function ensureHost() {
       return resolved;
     }
 
-    const found = await discoverHost(4500);
+    // A short first search: the register either answers quickly or it is not
+    // there. Long searches left the app sitting on a blank screen.
+    const found = await discoverHost(2500);
     if (found && found.found) {
       // Bluetooth has no address to remember: the register is reached through
       // the paired phone, so the base is a placeholder and every request goes

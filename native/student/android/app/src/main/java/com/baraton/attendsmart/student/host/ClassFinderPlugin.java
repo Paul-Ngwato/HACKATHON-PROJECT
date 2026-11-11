@@ -96,6 +96,15 @@ public class ClassFinderPlugin extends Plugin {
         call.resolve(payload);
     }
 
+    /**
+     * Save an export where the user can actually find it. The WebView cannot
+     * download, so DOWNLOAD REPORT arrives here instead of disappearing.
+     */
+    @PluginMethod
+    public void saveText(PluginCall call) {
+        HostFiles.saveText(getContext(), call);
+    }
+
     @Override
     protected void handleOnDestroy() {
         if (bluetooth != null) {

@@ -743,16 +743,55 @@ window.addEventListener('appinstalled', () => {
 /* Boot                                                                */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Something on screen before the first await.
+ *
+ * Starting the host is quick, but finding another phone is a search: Wi-Fi
+ * discovery runs to its timeout and Bluetooth comes after it. With nothing
+ * painted until that settled, the app looked frozen on a blank screen.
+ */
+function paintBooting() {
+  if (!app || app.dataset.painted === 'booting') return;
+  app.dataset.painted = 'booting';
+  app.innerHTML = `<div class="auth">
+    <section class="auth-panel">
+      <div class="auth-card">
+        <div class="eyebrow">AttendEase</div>
+        <h2>Starting…</h2>
+        <p class="sub">${APP_ROLE === 'lecturer'
+          ? 'Opening the class register on this phone.'
+          : 'Looking for the lecturer phone — first on the Wi-Fi, then over Bluetooth.'}</p>
+      </div>
+    </section>
+  </div>`;
+}
+
 async function boot() {
-  // In the APKs the server is the lecturer's own phone (host) or a phone found
-  // on the class Wi-Fi (student). This must settle before the first fetch.
+  paintBooting();
+
   let host = null;
+  let settled = false;
+  // A search still running after three seconds gets said out loud, instead of
+  // leaving a "Starting…" card up for the whole discovery.
+  const slow = APP_ROLE === 'student'
+    ? setTimeout(() => {
+        if (settled) return;
+        renderConnect('Still searching for the lecturer phone over Wi-Fi and Bluetooth. Ask the lecturer to open AttendEase and search again — or enter the address by hand.');
+      }, 3000)
+    : null;
+
   try {
+    // In the APKs the server is the lecturer's own phone (host) or a phone found
+    // on the class Wi-Fi (student). This must settle before the first fetch.
     host = await ensureHost();
   } catch (err) {
+    settled = true;
+    if (slow) clearTimeout(slow);
     renderConnect(err && err.message ? err.message : 'The class host could not start on this phone.');
     return;
   }
+  settled = true;
+  if (slow) clearTimeout(slow);
 
   if (needsServerSetup()) {
     if (isNativeApp()) {

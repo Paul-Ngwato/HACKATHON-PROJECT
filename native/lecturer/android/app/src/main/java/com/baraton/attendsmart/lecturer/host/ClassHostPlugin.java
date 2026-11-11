@@ -158,6 +158,15 @@ public class ClassHostPlugin extends Plugin {
         call.resolve(statusPayload());
     }
 
+    /**
+     * Save an export where the user can actually find it. The WebView cannot
+     * download, so the CSV that DOWNLOAD EXCEL builds arrives here instead.
+     */
+    @PluginMethod
+    public void saveText(PluginCall call) {
+        HostFiles.saveText(getContext(), call);
+    }
+
     /** Every LAN address a student could type, most useful first. */
     @PluginMethod
     public void addresses(PluginCall call) {

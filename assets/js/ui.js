@@ -350,13 +350,47 @@ export async function copyText(text) {
   }
 }
 
-export function downloadCSV(filename, headers, rows) {
+/**
+ * The native saver, when this page runs inside one of the APKs. Both plugins
+ * expose saveText({name, content, mime}); in a browser there is nothing to use.
+ */
+function nativeFileSaver() {
+  const cap = typeof window !== 'undefined' ? window.Capacitor : null;
+  if (!cap || typeof cap.isNativePlatform !== 'function' || !cap.isNativePlatform()) return null;
+  const plugins = cap.Plugins || {};
+  const plugin = plugins.ClassHost || plugins.ClassFinder;
+  return plugin && typeof plugin.saveText === 'function' ? plugin : null;
+}
+
+export async function downloadCSV(filename, headers, rows) {
   const cell = (v) => {
     const s = v == null ? '' : String(v);
     return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const csv = [headers.map(cell).join(','), ...rows.map((r) => r.map(cell).join(','))].join('\r\n');
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+  const text = '\ufeff' + csv;
+
+  // Inside the APKs a WebView has no download manager: the blob + <a download>
+  // path below silently does nothing there, which is why the export looked
+  // broken on the phone while it worked in a browser. Write it natively and say
+  // where it landed.
+  const saver = nativeFileSaver();
+  if (saver) {
+    try {
+      const saved = await saver.saveText({ name: filename, content: text, mime: 'text/csv' });
+      const where = saved && (saved.path || saved.uri) ? saved.path || saved.uri : `Downloads/AttendEase/${filename}`;
+      toast('Report saved', { message: `${filename} → ${where}` });
+      return true;
+    } catch (err) {
+      toast('Could not save the report', {
+        message: err && err.message ? err.message : 'This phone refused to write the file.',
+        tone: 'error'
+      });
+      return false;
+    }
+  }
+
+  const blob = new Blob([text], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -365,6 +399,7 @@ export function downloadCSV(filename, headers, rows) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1500);
+  return true;
 }
 
 export function countdownText(ms) {
