@@ -1,10 +1,10 @@
-# AttendEase — The 5-Minute Pitch
+# CLASSPREF3CT — The 5-Minute Pitch
 
 A word-for-word script that fits **5:00**, with the demo beats that win it and the answers judges
 actually ask for. Times are cumulative; if you are running late, cut §4's second refusal, never the
 lecturer's live panel.
 
-`AttendEase v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
+`CLASSPREF3CT v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
 
 ---
 
@@ -38,7 +38,7 @@ lecturer's phone, so it works in a hall with no internet."*
 
 ## 0:40 – 1:20 · The idea, and the decision that makes it different
 
-> "AttendEase is a register that proves itself. Four things have to agree before a record exists:
+> "CLASSPREF3CT is a register that proves itself. Four things have to agree before a record exists:
 > the lecturer has a window open, the student has the four-digit code, the student is on the final
 > semester register, and their phone is inside the GPS fence of that room. A posted record is final.
 >
@@ -99,7 +99,7 @@ advertising, Bluetooth door is open.)*
 > **Three:** failure is honest. Location failure is no longer one message: no permission, no fix, and
 > an insecure origin each say what they are. Bluetooth says *'beacon not seen'* rather than pretending."
 
-**Slide: evidence table from `dist/AttendEase-Build-API-QA.md`.**
+**Slide: evidence table from `dist/CLASSPREF3CT-Build-API-QA.md`.**
 
 ## 3:40 – 4:30 · Business model
 

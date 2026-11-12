@@ -1,5 +1,5 @@
 /**
- * AttendEase — domain rules.
+ * CLASSPREF3CT — domain rules.
  *
  * The same gates the prototype used to run in the browser are enforced here,
  * once, for every phone:

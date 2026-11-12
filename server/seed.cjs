@@ -1,5 +1,5 @@
 /**
- * AttendSmart AI — semester seed.
+ * CLASSPREF3CT AI — semester seed.
  *
  * Pure data generation, shared by the first server boot and the admin reset.
  * No browser APIs: this runs inside the Node/SQLite backend only.

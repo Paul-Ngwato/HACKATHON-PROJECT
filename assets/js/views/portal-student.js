@@ -1,5 +1,5 @@
 /**
- * AttendEase — student portal.
+ * CLASSPREF3CT — student portal.
  *
  * Old government-portal layout: dark green header (drawn by the shell), beige
  * page, two boxed steps and a plain grey POST ATTENDANCE button.
@@ -373,7 +373,7 @@ async function laneScan(root, ctx, lane) {
     result && result.error
       ? result.error
       : lane === 'bluetooth'
-        ? 'No lecturer phone answered over Bluetooth. Ask the lecturer to open AttendEase and tap "Make this phone findable", then search again.'
+        ? 'No lecturer phone answered over Bluetooth. Ask the lecturer to open CLASSPREF3CT and tap "Make this phone findable", then search again.'
         : 'No lecturer phone answered on the Wi-Fi. If this network isolates phones, use SCAN BLUETOOTH.'
   );
 }
@@ -536,7 +536,7 @@ export function reports(ctx) {
       if (!button) return;
       button.addEventListener('click', () => {
         downloadCSV(
-          'AttendEase-my-attendance.csv',
+          'CLASSPREF3CT-my-attendance.csv',
           ['Course code', 'Unit', 'Lectures held', 'Present', 'Absent', 'Percentage'],
           rows.map((r) => [r.course.code, r.course.name, r.held, r.attended, Math.max(0, r.held - r.attended), round1(r.pct)])
         );

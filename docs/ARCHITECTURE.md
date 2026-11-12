@@ -1,4 +1,4 @@
-# AttendEase — Architecture
+# CLASSPREF3CT — Architecture
 
 How the system is put together, and why each decision was made that way.
 
@@ -103,7 +103,7 @@ message:
 | Case | Detection | What the student sees |
 |---|---|---|
 | Insecure origin | `window.isSecureContext === false` | use the APK or https |
-| Permission denied | `error.code === 1` | how to enable location for AttendEase |
+| Permission denied | `error.code === 1` | how to enable location for CLASSPREF3CT |
 | Indoors / no satellites | first attempt times out | retries once with network location, then asks for a window |
 
 A watchdog wraps each attempt, because Chromium can leave a geolocation promise pending forever

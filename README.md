@@ -1,10 +1,10 @@
-# AttendEase
+# CLASSPREF3CT
 
 **Location-verified attendance for Baraton University (UEAB).**
 Two installable Android apps and one shared server: a lecturer opens a class window, students post
 from inside the room, and the register compiles itself.
 
-`AttendEase v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
+`CLASSPREF3CT v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
 
 ---
 
@@ -55,8 +55,8 @@ No passwords — the seeded accounts exist so a demo can switch roles in two tap
 
 | App | Source shell | Android project | APK |
 |---|---|---|---|
-| Student | `student.html` | `native/student` | `dist/AttendSmart-Student-debug.apk` |
-| Lecturer | `lecturer.html` | `native/lecturer` | `dist/AttendSmart-Lecturer-debug.apk` |
+| Student | `student.html` | `native/student` | `dist/CLASSPREF3CT-Student-debug.apk` |
+| Lecturer | `lecturer.html` | `native/lecturer` | `dist/CLASSPREF3CT-Lecturer-debug.apk` |
 
 Both are the same government-portal interface (green header, beige page, boxy tables, flat grey
 buttons) and both are real Capacitor builds with location and Bluetooth permissions declared.

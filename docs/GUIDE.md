@@ -1,4 +1,4 @@
-# AttendEase — Setup and Operating Guide
+# CLASSPREF3CT — Setup and Operating Guide
 
 Everything needed to run a demo, a pilot class, or a full semester. Read
 [ARCHITECTURE.md](ARCHITECTURE.md) if you want to know *why* it behaves this way.
@@ -21,7 +21,7 @@ node server.js
 The banner prints what you need:
 
 ```
-  AttendEase — shared backend running
+  CLASSPREF3CT — shared backend running
   Database : .../data/attendsmart.db
   Local    : http://localhost:4173
   Network  : http://192.168.72.124:4173   ← use this on the phones
@@ -41,10 +41,10 @@ Two options, in order of reliability.
 
 ### A. Install the APKs (recommended)
 
-1. Copy `dist/AttendSmart-Student-debug.apk` to a student phone and
-   `dist/AttendSmart-Lecturer-debug.apk` to the lecturer's phone (USB, WhatsApp to yourself, Drive).
+1. Copy `dist/CLASSPREF3CT-Student-debug.apk` to a student phone and
+   `dist/CLASSPREF3CT-Lecturer-debug.apk` to the lecturer's phone (USB, WhatsApp to yourself, Drive).
 2. Open the file, allow "install from unknown sources" when Android asks, install.
-3. First launch shows **AttendEase — CLASS SERVER**. Type the laptop's `Network` address
+3. First launch shows **CLASSPREF3CT — CLASS SERVER**. Type the laptop's `Network` address
    (`http://192.168.72.124:4173`) and press **CONNECT**.
 4. Sign in with a demo account (below).
 
@@ -137,7 +137,7 @@ Existing registration numbers are matched and reused, so pasting twice cannot du
 |---|---|---|
 | App says it cannot reach the server | wrong address, phone on mobile data, firewall | re-enter the `Network` address, same Wi-Fi, allow Node on private networks |
 | `This page is on http://, so the browser blocks GPS` | browser + insecure origin | use the APK, or serve over https |
-| `Location permission is off for AttendEase` | permission denied | Settings → Apps → AttendEase → Permissions → Location → Allow while using |
+| `Location permission is off for CLASSPREF3CT` | permission denied | Settings → Apps → CLASSPREF3CT → Permissions → Location → Allow while using |
 | `No GPS fix yet` | indoors, no satellites | the app retries with network location; step near a door/window and press POST again |
 | `You already posted attendance for DBM411 today` | one post per class per day | expected — nothing to do |
 | `You are N m from the class location` | outside the fence | move closer; the fence is the point |

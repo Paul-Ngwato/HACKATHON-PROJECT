@@ -1,10 +1,10 @@
-# AttendEase — Issues Log
+# CLASSPREF3CT — Issues Log
 
 Every problem this build actually hit, what caused it, what changed, and how it was checked — in one
 table you can read in three minutes. The long-form version, with code detail, is
 [`docs/ISSUES-SOLVED.md`](../docs/ISSUES-SOLVED.md).
 
-`AttendEase v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
+`CLASSPREF3CT v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
 
 ---
 
@@ -90,8 +90,8 @@ cd native/lecturer/android && ./gradlew :app:testDebugUnitTest --no-daemon
 cat app/build/test-results/testDebugUnitTest/TEST-*.xml | grep -o 'tests="[0-9]*" .*errors="[0-9]*"'
 
 # the change is inside the artefact, not just the source
-unzip -p dist/AttendSmart-Student-debug.apk assets/public/assets/js/app.js | grep "finds the register on the same phone"
-unzip -l dist/AttendSmart-Student-debug.apk | grep -o "classes[0-9]*\.dex"
+unzip -p dist/CLASSPREF3CT-Student-debug.apk assets/public/assets/js/app.js | grep "finds the register on the same phone"
+unzip -l dist/CLASSPREF3CT-Student-debug.apk | grep -o "classes[0-9]*\.dex"
 
 # the cloud still answers, and refuses the wrong key
 curl -s https://site-0e3e6d5545fc40a7ae3aadc8cf8cb062.freebuff.page/api/health

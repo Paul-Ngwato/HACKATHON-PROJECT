@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * AttendSmart AI — stage the web shells for the Android builds.
+ * CLASSPREF3CT AI — stage the web shells for the Android builds.
  *
  * Capacitor needs a single `webDir` per app project, holding an `index.html`.
  * This script assembles that folder for both apps from the same source, so the

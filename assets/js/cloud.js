@@ -1,5 +1,5 @@
 /**
- * AttendEase cloud client.
+ * CLASSPREF3CT cloud client.
  *
  * The phone that ran a class stays authoritative; this module is only the
  * shelf it syncs to. Two rules make that safe on a campus network:

@@ -1,4 +1,4 @@
-# AttendEase — Presentation Pack
+# CLASSPREF3CT — Presentation Pack
 
 Slides, demo script, and the answers to the questions judges actually ask.
 
@@ -7,7 +7,7 @@ Slides, demo script, and the answers to the questions judges actually ask.
 ## 1. Slide outline (8 slides, 6 minutes)
 
 **1 — Title**
-AttendEase · Location-verified attendance · Baraton University (UEAB) · Hackathon 2026.
+CLASSPREF3CT · Location-verified attendance · Baraton University (UEAB) · Hackathon 2026.
 One line: *"Attendance you can prove."*
 
 **2 — The problem (with a number)**

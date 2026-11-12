@@ -1,5 +1,5 @@
 /**
- * AttendEase — SQLite store.
+ * CLASSPREF3CT — SQLite store.
  *
  * One shared database for every phone: reference data (students, courses,
  * halls), attendance sessions, posted records, device locks and audit events.
@@ -140,7 +140,7 @@ function migrate(db) {
     CREATE INDEX IF NOT EXISTS idx_events_session     ON security_events (session_id);
   `);
 
-  // Migrate databases created by earlier AttendSmart builds. Every statement
+  // Migrate databases created by earlier CLASSPREF3CT builds. Every statement
   // is additive, so existing attendance history is preserved.
   ensureColumns(db, 'courses', [
     ['room', 'TEXT']

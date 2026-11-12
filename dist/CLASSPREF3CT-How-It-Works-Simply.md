@@ -1,8 +1,8 @@
-# AttendEase — How It Really Works
+# CLASSPREF3CT — How It Really Works
 
 **The plain-language version. No code, no jargon, nothing you need a computer science degree for.**
 
-`AttendEase v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
+`CLASSPREF3CT v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
 
 ---
 
@@ -98,11 +98,11 @@ When the lecturer presses START, the phone does two things at once, because camp
   as the phone writing its name and address on a notice board that every device on that network can
   read. It costs nothing and needs no server. This is the same mechanism that lets a printer appear in
   your phone's print menu.
-- **A UDP broadcast beacon on port 4174.** Every few seconds the phone shouts "AttendEase is here, port
+- **A UDP broadcast beacon on port 4174.** Every few seconds the phone shouts "CLASSPREF3CT is here, port
   4173" to the whole room. Some campus access points drop the mDNS multicast packets, but they almost
   always let a broadcast through. Whichever of the two answers first wins.
 
-The announcement carries a friendly label ("AttendEase DBM411") so a student can see *which* register
+The announcement carries a friendly label ("CLASSPREF3CT DBM411") so a student can see *which* register
 they found when two lecturers are in the same corridor.
 
 ### 4.2 Step two: the student's phone listens
@@ -160,7 +160,7 @@ Wi-Fi, not a hotspot, not even a SIM card. Two phones, ten metres, done.
 | Piece | Plain meaning |
 |---|---|
 | **RFCOMM** | The classic Bluetooth "serial cable in the air". One phone listens, one connects, then it is just a pipe you can write bytes into. |
-| **SDP record** | The name tag the listening phone publishes: "I speak the AttendEase service". Its identifier is fixed: `8f1c9d42-6b7e-4c1a-9f10-2d5e7a3b6c88`. |
+| **SDP record** | The name tag the listening phone publishes: "I speak the CLASSPREF3CT service". Its identifier is fixed: `8f1c9d42-6b7e-4c1a-9f10-2d5e7a3b6c88`. |
 | **Pairing / bonding** | The one-time security handshake Android shows as a dialog. After it, the two phones remember each other and never ask again. |
 | **Discoverable** | The five-minute window in which an unpaired phone is allowed to *see* the lecturer's phone at all. |
 | **Insecure RFCOMM** | A deliberately PIN-less variant, so pairing is a single "Pair" tap instead of typing a number. |
@@ -171,7 +171,7 @@ Wi-Fi, not a hotspot, not even a SIM card. Two phones, ten metres, done.
    opens a five-minute discoverable window. The app keeps the Bluetooth listener running the whole time
    class is live.
 2. The student taps **SCAN BLUETOOTH**. Their phone first tries the phone that hosted the last class
-   (remembered), then any already-paired phone that publishes the AttendEase service, then finally a
+   (remembered), then any already-paired phone that publishes the CLASSPREF3CT service, then finally a
    fresh Bluetooth discovery scan.
 3. When it finds the lecturer's phone, Android shows a pairing prompt. The student taps Pair. The phones
    bond. This happens **once per student per semester**.
@@ -226,7 +226,7 @@ This is the list judges and school administrators rarely ask about, and it is wh
 | **Security events** | Refused attempts are written down, not just rejected: "this person tried to post for a unit they are not registered for". The lecturer can see them. |
 | **SHA-256 hashing** | The cloud never stores the class key in readable form, only its fingerprint. Even someone with the database cannot derive the key. |
 | **Android permissions** | Camera-free, contact-free, but it does need location (for the fence) and Nearby devices (for Bluetooth). Missing permissions are surfaced as a sentence, not a crash. |
-| **MediaStore** | A web page cannot save a file to Downloads. So the export is handed to Android's own download store, which is why the CSV appears in `Downloads/AttendEase`. |
+| **MediaStore** | A web page cannot save a file to Downloads. So the export is handed to Android's own download store, which is why the CSV appears in `Downloads/CLASSPREF3CT`. |
 | **WebView settings** | The phone allows the packaged page to talk to `http://192.168.x.x` (cleartext) and to mix content. Without that one setting the app would look broken on a LAN. |
 | **Timezone handling** | All times are stored in UTC and shown in the phone's local time, so "posted at 09:37" is 09:37 where the class is. |
 | **A clock sweep** | On every request the register closes windows whose end time has passed. Nobody presses "stop" and forgets; the window still closes. |
@@ -386,13 +386,13 @@ Not claims — artefacts you can open.
 
 | Achieved | Evidence |
 |---|---|
-| Two installable Android apps | `AttendSmart-Lecturer-debug.apk`, `AttendSmart-Student-debug.apk`, ~7.7 MB each, debug-signed |
+| Two installable Android apps | `CLASSPREF3CT-Lecturer-debug.apk`, `CLASSPREF3CT-Student-debug.apk`, ~7.7 MB each, debug-signed |
 | A register that runs on a phone | `ClassServer` on port 4173, `Register` persisting to a JSON file, revision counter, SSE live feed |
 | Rules in one place, unit-tested | `Rules.java` — 8 tests (enrolment, duplicate, day lock, fence, late grace, device lock…) |
 | Two transports sharing one contract | `ClassServer.serveOne()` serves both the TCP socket and the RFCOMM socket — 6 transport tests |
 | Real discovery, two mechanisms | NSD `_attendease._tcp.` plus a UDP beacon on 4174, with a loopback fast path for a single-phone demo |
 | Bluetooth that a new student can actually find | Android 12+ `BLUETOOTH_ADVERTISE` granted and requested; five-minute discoverable window; SDP-checked dialling; pairing once, then remembered |
-| Excel that lands somewhere real | CSV written through Android's MediaStore into `Downloads/AttendEase` |
+| Excel that lands somewhere real | CSV written through Android's MediaStore into `Downloads/CLASSPREF3CT` |
 | An optional cloud shelf | Cloudflare Worker + D1, key-hashed writes, idempotent inserts, live-verified status codes |
 | A documented, reproducible build | `tools/build-mobile.js` → `cap sync` → `gradlew assembleDebug`, plus a test command and a dex-verification step |
 | A pitch pack that matches the code | Seven documents in `dist/`, an issues log with how each fix was verified, and seven open issues on GitHub |
@@ -480,7 +480,7 @@ Three honest models, in ascending ambition:
 
 Compare the alternative the market usually buys: a biometric or card attendance system is commonly
 **KES 400,000 to 1,500,000 per lab**, plus installation, plus maintenance, plus cards, plus the queue at
-the door. AttendEase's hardware cost is **zero** and its marginal cost per class is a few kilobytes of
+the door. CLASSPREF3CT's hardware cost is **zero** and its marginal cost per class is a few kilobytes of
 Bluetooth.
 
 ### 13.5 The costs it creates, stated honestly
@@ -517,14 +517,14 @@ Bluetooth.
 
 **The lecturer, first class of the semester**
 
-1. Open AttendEase → the unit card → **START**. The phone captures its location and issues a four-digit
+1. Open CLASSPREF3CT → the unit card → **START**. The phone captures its location and issues a four-digit
    code.
 2. Tap **Make this phone findable** → accept *Nearby devices*. A five-minute window opens.
 3. Watch names arrive on the dashboard. Read the code out loud, or let students scan.
 
 **The student, first class**
 
-1. Open AttendEase → **Take Attendance**.
+1. Open CLASSPREF3CT → **Take Attendance**.
 2. Tap **SCAN BLUETOOTH**. The phone finds the lecturer's phone and Android asks to pair. Tap **Pair**.
 3. Type the four digits → **POST ATTENDANCE** → a receipt with the distance and "present" or "late".
 
@@ -574,6 +574,7 @@ Say these out loud before a judge finds them:
 | **UDP broadcast** | Shouting a small message to every device in the room. |
 | **RFCOMM** | The classic Bluetooth "serial cable in the air". |
 | **SDP** | The name tag a Bluetooth service publishes so others can recognise it. |
+
 | **Pairing / bonding** | The one-time security handshake that makes two phones trust each other. |
 | **Discoverable** | The window in which an unpaired phone is allowed to see this phone. |
 | **JSON** | Labelled plain text used to send data between the apps. |
@@ -590,4 +591,4 @@ Say these out loud before a judge finds them:
 
 ---
 
-`AttendEase v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
+`CLASSPREF3CT v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`

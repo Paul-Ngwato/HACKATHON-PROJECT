@@ -1,5 +1,5 @@
 /**
- * AttendEase — demo sign in.
+ * CLASSPREF3CT — demo sign in.
  *
  * Government-portal styling: green bar, boxed panel, plain grey buttons.
  * No passwords: the seeded accounts are the point of the demo.
@@ -13,7 +13,7 @@ const ROLES = {
   admin: { label: 'Administrator', icon: 'shield', blurb: 'University-wide trends and the advisor worklist.' }
 };
 
-const FOOTER = 'AttendEase v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE';
+const FOOTER = 'CLASSPREF3CT v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE';
 
 function accountsFor(db, role) {
   if (role === 'student') {
@@ -38,7 +38,7 @@ export function view(ctx) {
       <div class="gov-header-inner">
         <div class="gov-brand">
           <span class="gov-mark">AE</span>
-          <span>AttendEase <em>${portal}</em></span>
+          <span>CLASSPREF3CT <em>${portal}</em></span>
         </div>
         <div class="gov-user">Demo sign in</div>
       </div>

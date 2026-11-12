@@ -1,5 +1,5 @@
 /**
- * AttendEase — the class server lives on the lecturer's phone.
+ * CLASSPREF3CT — the class server lives on the lecturer's phone.
  *
  * Two native plugins back this module:
  *
@@ -96,7 +96,7 @@ function adopt(found) {
       running: true,
       url: '',
       device: found.host || '',
-      name: found.name || 'AttendEase class',
+      name: found.name || 'CLASSPREF3CT class',
       via: 'bluetooth'
     };
     return resolved;
@@ -108,7 +108,7 @@ function adopt(found) {
     mode: 'discovered',
     running: true,
     url: found.url,
-    name: found.name || 'AttendEase class',
+    name: found.name || 'CLASSPREF3CT class',
     via: found.via || 'nsd'
   };
   return resolved;
@@ -165,7 +165,7 @@ export async function ensureHost() {
       status = null;
     }
     if (!status || !status.running) {
-      status = await plugin.start({ port: DEFAULT_PORT, name: 'AttendEase' });
+      status = await plugin.start({ port: DEFAULT_PORT, name: 'CLASSPREF3CT' });
     }
     if (!status || !status.running) {
       throw new Error('The class server did not start on this phone.');

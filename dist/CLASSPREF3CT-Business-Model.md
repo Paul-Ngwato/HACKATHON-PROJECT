@@ -1,9 +1,9 @@
-# AttendEase — Business Model
+# CLASSPREF3CT — Business Model
 
 The commercial case behind what is in this repository: who pays, why, how much, what it costs to
 serve, and what has to be true before any of it is real.
 
-`AttendEase v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
+`CLASSPREF3CT v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
 
 ---
 
@@ -46,7 +46,7 @@ The obvious build is a server per campus. That build has a permanent cost — a 
 it patched, a firewall rule, a network that has to cooperate — and it fails exactly where the
 product is needed most: a hall with no usable Wi-Fi.
 
-AttendEase puts the authority on the phone that runs the class:
+CLASSPREF3CT puts the authority on the phone that runs the class:
 
 | Consequence | Effect on the business |
 |---|---|

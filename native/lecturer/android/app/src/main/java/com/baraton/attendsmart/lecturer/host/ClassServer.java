@@ -210,7 +210,7 @@ public final class ClassServer {
                     payload = "/".equals(path)
                             ? "<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'>"
                             + "<body style=\"font-family:system-ui;background:#F4F1E4;color:#123;padding:24px\">"
-                            + "<h2 style=\"color:#0B5D2E;margin:0 0 6px\">AttendEase class register</h2>"
+                            + "<h2 style=\"color:#0B5D2E;margin:0 0 6px\">CLASSPREF3CT class register</h2>"
                             + "<p>This phone is hosting the attendance register.</p><p>Revision "
                             + register.revision() + "</p></body>"
                             : "{\"ok\":true,\"state\":" + register.stateJson() + "}";

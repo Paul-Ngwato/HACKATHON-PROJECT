@@ -1,5 +1,5 @@
 /**
- * AttendEase — shared backend + static server.
+ * CLASSPREF3CT — shared backend + static server.
  *
  * One process owns the SQLite database that both Android apps talk to:
  *
@@ -23,7 +23,7 @@ const { connect, loadState, revisionOf } = require('./server/db.cjs');
 const domain = require('./server/domain.cjs');
 
 const ROOT = __dirname;
-const DB_FILE = process.env.ATTENDEASE_DB || process.env.ATTENDSMART_DB || path.join(ROOT, 'data', 'attendsmart.db');
+const DB_FILE = process.env.CLASSPREF3CT_DB || process.env.CLASSPREF3CT_DB || process.env.ATTENDEASE_DB || process.env.ATTENDSMART_DB || path.join(ROOT, 'data', 'attendsmart.db');
 const envPort = Number(process.env.PORT);
 const PORT = Number.isFinite(envPort) && envPort > 0 ? envPort : 4173;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -170,7 +170,7 @@ setInterval(() => {
   try {
     if (domain.sweepExpired(db)) broadcast();
   } catch (err) {
-    console.error('[AttendEase] sweep failed', err);
+    console.error('[CLASSPREF3CT] sweep failed', err);
   }
 }, 15000).unref();
 
@@ -424,7 +424,7 @@ const server = http.createServer(async (req, res) => {
       await handleApi(req, res, url);
     } catch (err) {
       const status = err instanceof domain.ApiError ? err.status : 500;
-      if (status === 500) console.error('[AttendEase] API error', err);
+      if (status === 500) console.error('[CLASSPREF3CT] API error', err);
       sendJson(req, res, status, { ok: false, error: err.message || 'Server error', ...(err.extra || {}) });
     }
     return;
@@ -451,7 +451,7 @@ function lanAddresses() {
 
 server.listen(PORT, HOST, () => {
   console.log('');
-  console.log('  AttendEase — shared backend running');
+  console.log('  CLASSPREF3CT — shared backend running');
   console.log(`  Database : ${DB_FILE}`);
   console.log(`  Local    : http://localhost:${PORT}`);
   for (const address of lanAddresses()) {

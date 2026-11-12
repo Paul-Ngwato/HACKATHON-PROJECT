@@ -1,4 +1,4 @@
-# AttendEase — Business Model
+# CLASSPREF3CT — Business Model
 
 The commercial case behind the demo: who pays, why, how much, and what has to be true.
 

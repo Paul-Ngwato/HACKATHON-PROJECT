@@ -21,13 +21,13 @@ import java.nio.charset.StandardCharsets;
  *
  * A WebView has no download manager: an <a download> click on a blob: URL does
  * nothing at all inside the APK, so the DOWNLOAD EXCEL button looked broken
- * while the browser build worked. This puts the file in Downloads/AttendEase
+ * while the browser build worked. This puts the file in Downloads/CLASSPREF3CT
  * through MediaStore on Android 10+, and in the app's own Downloads folder on
  * older phones, then tells the page where it landed.
  */
 final class HostFiles {
 
-    private static final String FOLDER = "AttendEase";
+    private static final String FOLDER = "CLASSPREF3CT";
 
     private HostFiles() {
     }

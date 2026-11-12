@@ -1,5 +1,5 @@
 /**
- * AttendSmart AI — administrator console.
+ * CLASSPREF3CT AI — administrator console.
  * University-wide attendance, the advisor risk worklist and course performance.
  */
 
@@ -135,7 +135,7 @@ export function overview(ctx) {
       if (exportBtn) {
         exportBtn.addEventListener('click', () => {
           downloadCSV(
-            'attendsmart-university-courses.csv',
+            'classpref3ct-university-courses.csv',
             ['Course code', 'Course name', 'Department', 'Lecturer', 'Students', 'Sessions', 'Average attendance %', 'At risk'],
             ua.courses.map((r) => [
               r.course.code,
@@ -275,7 +275,7 @@ export function risk(ctx) {
       if (exportBtn) {
         exportBtn.addEventListener('click', () => {
           downloadCSV(
-            'attendsmart-risk-students.csv',
+            'classpref3ct-risk-students.csv',
             ['Reg no', 'Student', 'Programme', 'Course', 'Attended', 'Sessions', 'Missed', 'Late', 'Attendance %'],
             rows.map((r) => [
               r.student.regNo,
@@ -369,7 +369,7 @@ export function courses(ctx) {
       if (exportBtn) {
         exportBtn.addEventListener('click', () => {
           downloadCSV(
-            'attendsmart-course-catalogue.csv',
+            'classpref3ct-course-catalogue.csv',
             ['Course code', 'Course name', 'Department', 'Lecturer', 'Students', 'Sessions', 'Average attendance %', 'At risk'],
             ua.courses.map((r) => [
               r.course.code,

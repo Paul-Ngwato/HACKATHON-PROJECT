@@ -1,10 +1,10 @@
-# AttendEase — Build, API and Judge Q&A
+# CLASSPREF3CT — Build, API and Judge Q&A
 
 How the APK came to exist, what is inside it, the complete API of all three surfaces, the process
 that produced it, the evidence that it works, and twenty answers for the people asking hard
 questions.
 
-`AttendEase v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
+`CLASSPREF3CT v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
 
 ---
 
@@ -29,7 +29,7 @@ four transformations, and each one is a command you can run.
                                             │
                                             │  ④ copy
                                             ▼
-                       dist/AttendSmart-Student-debug.apk, dist/AttendSmart-Lecturer-debug.apk
+                       dist/CLASSPREF3CT-Student-debug.apk, dist/CLASSPREF3CT-Lecturer-debug.apk
 ```
 
 **① Stage.** `tools/build-mobile.js` deletes `native/*/www`, copies `assets/`, `sw.js` and both
@@ -58,8 +58,8 @@ node tools/build-mobile.js                      # ① stage both shells
 (cd native/lecturer && npx cap sync android)
 (cd native/student/android  && ./gradlew assembleDebug --no-daemon)   # ③ compile
 (cd native/lecturer/android && ./gradlew assembleDebug --no-daemon)
-cp native/student/android/app/build/outputs/apk/debug/app-debug.apk  dist/AttendSmart-Student-debug.apk
-cp native/lecturer/android/app/build/outputs/apk/debug/app-debug.apk dist/AttendSmart-Lecturer-debug.apk
+cp native/student/android/app/build/outputs/apk/debug/app-debug.apk  dist/CLASSPREF3CT-Student-debug.apk
+cp native/lecturer/android/app/build/outputs/apk/debug/app-debug.apk dist/CLASSPREF3CT-Lecturer-debug.apk
 ```
 
 **Toolchain.** JDK 21 and Android SDK 36 live in `.toolchain/` — project-local and git-ignored, so
@@ -83,14 +83,14 @@ cd native/lecturer/android && ./gradlew :app:testDebugUnitTest --no-daemon
 | `assets/public/` | the entire web app: `index.html`, `assets/js/*`, `assets/css/portal.css` |
 | `assets/public/host-seed.json` | the demo semester, copied into private storage on first launch (lecturer) |
 | `classes.dex … classes8.dex` | Capacitor, Gson, the Bluetooth LE plugin and the app's own classes (multi-dex; the host package lands in `classes8.dex`) |
-| `res/` | icons, splash, the `AttendEase` app name |
+| `res/` | icons, splash, the `CLASSPREF3CT` app name |
 | signature | the **debug** keystore — installable from a file or a link, not publishable to Play |
 
 **How to verify any claim in this pack without a phone:**
 
 ```bash
-unzip -l dist/AttendSmart-Lecturer-debug.apk | head -20            # what shipped
-unzip -p dist/AttendSmart-Student-debug.apk assets/public/assets/js/bt.js   # the Bluetooth lane
+unzip -l dist/CLASSPREF3CT-Lecturer-debug.apk | head -20            # what shipped
+unzip -p dist/CLASSPREF3CT-Student-debug.apk assets/public/assets/js/bt.js   # the Bluetooth lane
 grep -E "uses-permission" native/lecturer/android/app/src/main/AndroidManifest.xml
 ```
 

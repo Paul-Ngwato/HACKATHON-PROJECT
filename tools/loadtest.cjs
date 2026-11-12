@@ -1,5 +1,5 @@
 /**
- * AttendEase — whole-class load test.
+ * CLASSPREF3CT — whole-class load test.
  *
  * Opens one real session and posts every enrolled student at the same moment,
  * the way a lecture hall does when the code appears on the projector. Reports

@@ -58,7 +58,7 @@ public class ClassHostPlugin extends Plugin {
     public void start(PluginCall call) {
         try {
             int port = call.getInt("port", ClassServer.DEFAULT_PORT);
-            String label = call.getString("name", "AttendEase");
+            String label = call.getString("name", "CLASSPREF3CT");
 
             if (server != null && server.isRunning()) {
                 call.resolve(statusPayload());

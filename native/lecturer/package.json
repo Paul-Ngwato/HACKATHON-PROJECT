@@ -1,8 +1,8 @@
 {
-  "name": "attendsmart-lecturer",
+  "name": "classpref3ct-lecturer",
   "version": "1.0.0",
   "private": true,
-  "description": "AttendSmart Lecturer — Android wrapper (Capacitor).",
+  "description": "CLASSPREF3CT Lecturer — Android wrapper (Capacitor).",
   "dependencies": {
     "@capacitor-community/bluetooth-le": "^8.3.0",
     "@capacitor/android": "^8.6.0",

@@ -1,5 +1,5 @@
 /**
- * AttendEase — data layer (shared backend client).
+ * CLASSPREF3CT — data layer (shared backend client).
  *
  * The database lives on the server now, so two independently installed apps
  * see the same sessions and records. This module keeps a synchronous snapshot
@@ -165,7 +165,7 @@ async function overWifi(method, pathname, body) {
     });
   } catch (err) {
     const unreachable = new Error(
-      `Cannot reach the AttendEase server at ${base || location.origin}. Check the Wi-Fi and the server address.`
+      `Cannot reach the CLASSPREF3CT server at ${base || location.origin}. Check the Wi-Fi and the server address.`
     );
     // Only a transport failure may be retried on the other lane: the register
     // never saw this request, so sending it again cannot post twice.

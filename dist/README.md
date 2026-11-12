@@ -1,9 +1,9 @@
-# AttendEase — Pitch Pack
+# CLASSPREF3CT — Pitch Pack
 
 Everything a judge, a registrar or a new developer needs, in the order they need it.
 All of it describes the code in this repository as it actually is, not an aspiration.
 
-`AttendEase v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
+`CLASSPREF3CT v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
 
 ---
 
@@ -22,16 +22,16 @@ All of it describes the code in this repository as it actually is, not an aspira
 
 | File | Answers |
 |---|---|
-| [AttendEase-How-It-Works-Simply.md](AttendEase-How-It-Works-Simply.md) | **Start here if you are not a developer.** The whole system in plain words: where the idea came from, how the phones talk over Wi-Fi and Bluetooth, the invisible machinery nobody sees, where location and the graphics come from, how the cloud shelf connects, what the school saves and earns, and how Bluetooth fits into a real class. |
-| [AttendEase-Pitch-5-Minutes.md](AttendEase-Pitch-5-Minutes.md) | What do I say, in what order, for exactly five minutes — plus the demo beats that win it and the answers to the questions judges actually ask. |
-| [AttendEase-Business-Model.md](AttendEase-Business-Model.md) | Who pays, how much, why now, what it costs to serve, and what the pilot has to prove. |
-| [AttendEase-Code-Tour.md](AttendEase-Code-Tour.md) | Where every file is, what it does, and how one check-in travels from a student's thumb to the lecturer's screen — over Wi-Fi and over Bluetooth. |
-| [AttendEase-Build-API-QA.md](AttendEase-Build-API-QA.md) | How the APK came to exist step by step, the complete API of all three surfaces, the process, the evidence, and twenty prepared answers. |
-| [AttendEase-Workflow.md](AttendEase-Workflow.md) | The change loop, the verification gates, the release process, and the demo-day runbook with its fallback ladder. |
-| [AttendEase-Issues-Log.md](AttendEase-Issues-Log.md) | All twenty issues on one page with how each was verified, plus the open gaps that are still owed. |
+| [CLASSPREF3CT-How-It-Works-Simply.md](CLASSPREF3CT-How-It-Works-Simply.md) | **Start here if you are not a developer.** The whole system in plain words: where the idea came from, how the phones talk over Wi-Fi and Bluetooth, the invisible machinery nobody sees, where location and the graphics come from, how the cloud shelf connects, what the school saves and earns, and how Bluetooth fits into a real class. |
+| [CLASSPREF3CT-Pitch-5-Minutes.md](CLASSPREF3CT-Pitch-5-Minutes.md) | What do I say, in what order, for exactly five minutes — plus the demo beats that win it and the answers to the questions judges actually ask. |
+| [CLASSPREF3CT-Business-Model.md](CLASSPREF3CT-Business-Model.md) | Who pays, how much, why now, what it costs to serve, and what the pilot has to prove. |
+| [CLASSPREF3CT-Code-Tour.md](CLASSPREF3CT-Code-Tour.md) | Where every file is, what it does, and how one check-in travels from a student's thumb to the lecturer's screen — over Wi-Fi and over Bluetooth. |
+| [CLASSPREF3CT-Build-API-QA.md](CLASSPREF3CT-Build-API-QA.md) | How the APK came to exist step by step, the complete API of all three surfaces, the process, the evidence, and twenty prepared answers. |
+| [CLASSPREF3CT-Workflow.md](CLASSPREF3CT-Workflow.md) | The change loop, the verification gates, the release process, and the demo-day runbook with its fallback ladder. |
+| [CLASSPREF3CT-Issues-Log.md](CLASSPREF3CT-Issues-Log.md) | All twenty issues on one page with how each was verified, plus the open gaps that are still owed. |
 
-Also in this folder: `AttendSmart-Student-debug.apk` and `AttendSmart-Lecturer-debug.apk` — the
-installable builds, and `AttendSmart-source.zip`, a snapshot of the source these were built from.
+Also in this folder: `CLASSPREF3CT-Student-debug.apk` and `CLASSPREF3CT-Lecturer-debug.apk` — the
+installable builds, and `CLASSPREF3CT-source.zip`, a snapshot of the source these were built from.
 
 ---
 
@@ -40,7 +40,7 @@ installable builds, and `AttendSmart-source.zip`, a snapshot of the source these
 ```
               LECTURER PHONE                                   STUDENT PHONE
    ┌──────────────────────────────┐                 ┌──────────────────────────────┐
-   │ AttendEase Lecturer APK      │                 │ AttendEase Student APK       │
+   │ CLASSPREF3CT Lecturer APK      │                 │ CLASSPREF3CT Student APK       │
    │                              │  1. Wi-Fi  ────►│ finds the register by:       │
    │  ClassHost  :4173  ◄─────────┼─────────────────┼── NSD _attendease._tcp.      │
    │  Discovery  :4174  (beacon)  │  2. BT     ────►│── UDP beacon :4174           │
@@ -69,4 +69,4 @@ Built, packaged and unit-tested here; **not walked through on two physical phone
 workspace. Bluetooth pairing, RFCOMM throughput and the WebView's LAN fetch are verified by
 construction and by JVM tests, not by holding two handsets. Every other claim in this pack is
 reproducible with a command in
-[AttendEase-Build-API-QA.md](AttendEase-Build-API-QA.md#evidence-what-was-actually-run).
+[CLASSPREF3CT-Build-API-QA.md](CLASSPREF3CT-Build-API-QA.md#evidence-what-was-actually-run).

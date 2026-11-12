@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">AttendEase Student</string>
-    <string name="title_activity_main">AttendEase Student</string>
+    <string name="app_name">CLASSPREF3CT Student</string>
+    <string name="title_activity_main">CLASSPREF3CT Student</string>
     <string name="package_name">com.baraton.attendsmart.student</string>
     <string name="custom_url_scheme">com.baraton.attendsmart.student</string>
 </resources>

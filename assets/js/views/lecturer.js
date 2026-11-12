@@ -1,5 +1,5 @@
 /**
- * AttendEase — lecturer console.
+ * CLASSPREF3CT — lecturer console.
  *
  * Units → upload the class list → START (captures the official class location)
  * → live four-digit code + roster → ANALYSIS with a downloadable report.
@@ -91,7 +91,7 @@ async function captureFix(source) {
     throw new Error('This device has no Geolocation API. Switch the source to BT-821C.');
   }
   if (!window.isSecureContext) {
-    throw new Error('This browser blocks GPS on plain http://. Use the installed AttendEase app, or switch the source to BT-821C.');
+    throw new Error('This browser blocks GPS on plain http://. Use the installed CLASSPREF3CT app, or switch the source to BT-821C.');
   }
 
   return await new Promise((resolve, reject) => {
@@ -202,7 +202,7 @@ export function overview(ctx) {
     </div>`;
 
   return {
-    eyebrow: 'AttendEase · Lecturer',
+    eyebrow: 'CLASSPREF3CT · Lecturer',
     title: 'My units',
     sub: 'START attendance in class, then open ANALYSIS for the student report.',
     actions: `<a class="btn btn-primary btn-sm" href="#/lecturer/create">+ CREATE UNIT</a>`,
@@ -267,7 +267,7 @@ export function create(ctx) {
         <span class="alert-icon">${icon('info', 16)}</span>
         <div>
           <div class="alert-title">The code and GPS fence come later</div>
-          <div class="alert-body">When you press START in class, AttendEase captures that phone's precise location and issues a fresh four-digit code. Students must be within ${FENCE_METRES} m.</div>
+          <div class="alert-body">When you press START in class, CLASSPREF3CT captures that phone's precise location and issues a fresh four-digit code. Students must be within ${FENCE_METRES} m.</div>
         </div>
       </div>
 
@@ -279,7 +279,7 @@ export function create(ctx) {
   </div>`;
 
   return {
-    eyebrow: 'AttendEase · Lecturer',
+    eyebrow: 'CLASSPREF3CT · Lecturer',
     title: 'Create unit',
     sub: 'Enter the details once. You can upload the student list next.',
     html,
@@ -325,7 +325,7 @@ export function setup(ctx) {
 
   if (!course) {
     return {
-      eyebrow: 'AttendEase · Lecturer',
+      eyebrow: 'CLASSPREF3CT · Lecturer',
       title: 'Upload students',
       sub: 'Create a unit first.',
       html: `<div class="empty"><div class="ic">${icon('book', 20)}</div>No unit selected.<div class="mt-16"><a class="btn btn-primary btn-sm" href="#/lecturer/create">+ CREATE UNIT</a></div></div>`
@@ -449,7 +449,7 @@ export function setup(ctx) {
     </div>`;
 
   return {
-    eyebrow: 'AttendEase · Lecturer',
+    eyebrow: 'CLASSPREF3CT · Lecturer',
     title: 'Upload students',
     sub: 'The class list decides who can post attendance.',
     actions: `<a class="btn btn-soft btn-sm" href="#/lecturer/classes">${icon('arrow', 15)} My units</a>`,
@@ -627,7 +627,7 @@ export function session(ctx) {
 
   if (!course) {
     return {
-      eyebrow: 'AttendEase · Lecturer',
+      eyebrow: 'CLASSPREF3CT · Lecturer',
       title: 'Start attendance',
       sub: 'No unit selected.',
       html: `<div class="empty"><div class="ic">${icon('book', 20)}</div>Create a unit first.<div class="mt-16"><a class="btn btn-primary btn-sm" href="#/lecturer/create">+ CREATE UNIT</a></div></div>`
@@ -698,7 +698,7 @@ export function session(ctx) {
     ${report ? reportHTML(report) : ''}`;
 
     return {
-      eyebrow: 'AttendEase · Lecturer',
+      eyebrow: 'CLASSPREF3CT · Lecturer',
       title: `${course.code} · ${course.name}`,
       sub: 'Press START in class. The phone location becomes the official class location.',
       actions: `<a class="btn btn-soft btn-sm" href="#/lecturer/classes">${icon('arrow', 15)} My units</a>`,
@@ -900,7 +900,7 @@ export function session(ctx) {
     </div>`;
 
   return {
-    eyebrow: 'AttendEase · Live',
+    eyebrow: 'CLASSPREF3CT · Live',
     title: `${course.code} · ${course.name}`,
     sub: `${roomFor(db, course)} · ${active.durationMin} minute window · ${venue.radius} m fence`,
     actions: `<button class="btn btn-danger btn-sm" data-action="end">${icon('stop', 14)} END ATTENDANCE</button>`,
@@ -1018,7 +1018,7 @@ export function analytics(ctx) {
 
   if (!analysis) {
     return {
-      eyebrow: 'AttendEase · Lecturer',
+      eyebrow: 'CLASSPREF3CT · Lecturer',
       title: 'Analysis',
       sub: 'No unit selected.',
       html: `<div class="empty"><div class="ic">${icon('chart', 20)}</div>No analysis available.<div class="mt-16"><a class="btn btn-primary btn-sm" href="#/lecturer/classes">My units</a></div></div>`
@@ -1088,7 +1088,7 @@ export function analytics(ctx) {
     </div>`;
 
   return {
-    eyebrow: 'AttendEase · Lecturer',
+    eyebrow: 'CLASSPREF3CT · Lecturer',
     title: 'Analysis',
     sub: 'Class attendance rate, the highest attendee and the students below 70%.',
     actions: `<a class="btn btn-soft btn-sm" href="#/lecturer/classes">${icon('arrow', 15)} My units</a>`,
@@ -1105,7 +1105,7 @@ export function analytics(ctx) {
       if (download) {
         download.addEventListener('click', () => {
           downloadCSV(
-            `attendease-${analysis.course.code}-report.csv`,
+            `classpref3ct-${analysis.course.code}-report.csv`,
             ['Student Name', 'Student ID', 'Classes Attended', 'Total Classes', 'Percentage'],
             perStudent.map((row) => [
               row.student.name,

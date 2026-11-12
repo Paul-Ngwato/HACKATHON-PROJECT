@@ -75,7 +75,7 @@ public final class Discovery {
 
         try {
             NsdServiceInfo info = new NsdServiceInfo();
-            info.setServiceName("AttendEase " + safe);
+            info.setServiceName("CLASSPREF3CT " + safe);
             info.setServiceType(SERVICE_TYPE);
             info.setPort(port);
 
@@ -397,7 +397,7 @@ public final class Discovery {
             if (port <= 0 || port > 65535) return null;
             String name = text(payload, "name");
             return new Found(from.getHostAddress(), port,
-                    name == null ? "AttendEase class" : name, "beacon");
+                    name == null ? "CLASSPREF3CT class" : name, "beacon");
         } catch (RuntimeException notOurs) {
             return null;
         }

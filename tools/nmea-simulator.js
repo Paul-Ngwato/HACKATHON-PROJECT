@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * AttendSmart AI — NMEA simulator.
+ * CLASSPREF3CT AI — NMEA simulator.
  *
  * Emits GGA + RMC sentences once a second on stdout, so the BT-821C bridge can
  * be exercised (and demoed) without the physical receiver:

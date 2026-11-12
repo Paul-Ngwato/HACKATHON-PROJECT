@@ -1,5 +1,5 @@
 /**
- * AttendEase — GPS source layer.
+ * CLASSPREF3CT — GPS source layer.
  *
  * Two real sources feed the same fix shape, so verification never cares where
  * the coordinates came from:
@@ -157,7 +157,7 @@ export function createGpsFeed(onChange, options = {}) {
     if (!window.isSecureContext) {
       emit({
         status: 'error',
-        error: 'This browser blocks GPS on a plain http:// address. Use the installed AttendEase app, or switch to the BT-821C receiver below.'
+        error: 'This browser blocks GPS on a plain http:// address. Use the installed CLASSPREF3CT app, or switch to the BT-821C receiver below.'
       });
       return;
     }

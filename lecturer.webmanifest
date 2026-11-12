@@ -1,7 +1,7 @@
 {
   "id": "/lecturer.html",
-  "name": "AttendEase Lecturer",
-  "short_name": "AttendEase",
+  "name": "CLASSPREF3CT Lecturer",
+  "short_name": "CLASSPREF3CT",
   "description": "Create units, upload the class list, start a code + GPS session and download the report.",
   "start_url": "./lecturer.html",
   "scope": "./",

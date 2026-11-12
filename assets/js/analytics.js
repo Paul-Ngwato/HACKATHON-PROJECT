@@ -1,5 +1,5 @@
 /**
- * AttendSmart AI — analytics engine.
+ * CLASSPREF3CT AI — analytics engine.
  *
  * Pure functions over the local dataset: percentages, risk banding, monthly
  * trend, weekday/slot performance, absentee ranking and flags. The dashboards

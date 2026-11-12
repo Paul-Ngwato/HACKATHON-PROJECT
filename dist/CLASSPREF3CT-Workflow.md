@@ -1,10 +1,10 @@
-# AttendEase — Workflow
+# CLASSPREF3CT — Workflow
 
 How a change becomes a shipped APK, how the repository is run, and the runbook for the twenty
 minutes before a demo. This is the process that actually produced the commits on
 `hackathon/pitch-pack`.
 
-`AttendEase v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
+`CLASSPREF3CT v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
 
 ---
 
@@ -34,9 +34,9 @@ node tools/build-mobile.js
 Then **always** confirm the change travelled, because a green build proves compilation, not intent:
 
 ```bash
-unzip -p dist/AttendSmart-Student-debug.apk assets/public/assets/js/app.js | grep "<a string you changed>"
-for d in $(unzip -l dist/AttendSmart-Lecturer-debug.apk | grep -o "classes[0-9]*\.dex"); do
-  unzip -p dist/AttendSmart-Lecturer-debug.apk "$d" > /tmp/d.bin; echo "$d $(grep -ac <YourClass> /tmp/d.bin)"; done
+unzip -p dist/CLASSPREF3CT-Student-debug.apk assets/public/assets/js/app.js | grep "<a string you changed>"
+for d in $(unzip -l dist/CLASSPREF3CT-Lecturer-debug.apk | grep -o "classes[0-9]*\.dex"); do
+  unzip -p dist/CLASSPREF3CT-Lecturer-debug.apk "$d" > /tmp/d.bin; echo "$d $(grep -ac <YourClass> /tmp/d.bin)"; done
 ```
 
 That last trick exists because the app's own classes land in `classes8.dex` in a multi-dex build —
@@ -110,9 +110,9 @@ There is no store and no CI. A release is four manual steps, and that is deliber
 distributes a file over WhatsApp or a QR code.
 
 1. **Version** — `dist/` file names, the footer string in the views
-   (`AttendEase v1.2 | HACKATHON PROJECT | © 2026 | …`) and the `package.json` version move together.
+   (`CLASSPREF3CT v1.2 | HACKATHON PROJECT | © 2026 | …`) and the `package.json` version move together.
 2. **Build both**, run the gates in §3, copy into `dist/`.
-3. **Snapshot the source** (`dist/AttendSmart-source.zip`) so a judge can read the tree without Git.
+3. **Snapshot the source** (`dist/CLASSPREF3CT-source.zip`) so a judge can read the tree without Git.
 4. **Push the branch and open the PR.** Merging to `master` is what makes the repository's front page
    the current build.
 

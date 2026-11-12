@@ -1,5 +1,5 @@
 /**
- * AttendEase — location helper.
+ * CLASSPREF3CT — location helper.
  *
  * "No GPS fix yet" used to cover three very different failures. They are
  * separated here, because each one needs a different action from the student:
@@ -12,10 +12,10 @@
 
 const MESSAGES = {
   insecure:
-    'Location is blocked on this http:// address. Open the installed AttendEase app (or an https address) and post again.',
+    'Location is blocked on this http:// address. Open the installed CLASSPREF3CT app (or an https address) and post again.',
   unsupported: 'This device has no location service. Turn location on and try again.',
   denied:
-    'Location permission is off for AttendEase. Allow it in Settings → Apps → AttendEase → Permissions → Location, then post again.',
+    'Location permission is off for CLASSPREF3CT. Allow it in Settings → Apps → CLASSPREF3CT → Permissions → Location, then post again.',
   unavailable:
     'No GPS fix yet. Indoors this can happen — step near a window or door and press POST ATTENDANCE again.',
   timeout:

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * AttendSmart AI — home-screen icons.
+ * CLASSPREF3CT AI — home-screen icons.
  *
  * Zero dependencies: draws every icon from signed-distance shapes, rasterises it
  * with 4x4 supersampling and writes a real PNG using Node's own zlib. Run

@@ -1,5 +1,5 @@
 /**
- * AttendEase — student experience.
+ * CLASSPREF3CT — student experience.
  *
  * Enter the four-digit code the lecturer's server issued, confirm the class,
  * post once. The record is written to the shared database, so the lecturer's
@@ -111,7 +111,7 @@ export function overview(ctx) {
     </div>`;
 
   return {
-    eyebrow: 'AttendEase · Student',
+    eyebrow: 'CLASSPREF3CT · Student',
     title: `Hi, ${user.name.split(' ')[0]}`,
     sub: `${user.regNo} · ${user.program}`,
     actions: `<a class="btn btn-soft btn-sm" href="#/student/history">${icon('clock', 15)} My attendance</a>`,
@@ -367,7 +367,7 @@ export function checkin(ctx) {
   }
 
   return {
-    eyebrow: 'AttendEase · Student',
+    eyebrow: 'CLASSPREF3CT · Student',
     title: 'Scan attendance',
     sub: open.length ? 'Active lectures nearby. Enter the code and post once.' : 'Enter the code your lecturer is showing.',
     actions: `<a class="btn btn-soft btn-sm" href="#/student/history">${icon('clock', 15)} My attendance</a>`,
@@ -663,7 +663,7 @@ export function history(ctx) {
     </div>`;
 
   return {
-    eyebrow: 'AttendEase · Student',
+    eyebrow: 'CLASSPREF3CT · Student',
     title: 'My attendance',
     sub: `${user.regNo} · ${pctText(ov.pct)} overall across ${ov.courses.length} unit${ov.courses.length === 1 ? '' : 's'}.`,
     html,
@@ -679,7 +679,7 @@ export function history(ctx) {
       if (exportBtn) {
         exportBtn.addEventListener('click', () => {
           downloadCSV(
-            `attendease-${user.regNo.replace(/[^\w]+/g, '-')}-attendance.csv`,
+            `classpref3ct-${user.regNo.replace(/[^\w]+/g, '-')}-attendance.csv`,
             ['Date', 'Time', 'Course', 'Course name', 'Method', 'Distance (m)', 'Status', 'Session'],
             records.map((r) => [
               fmtDateShort(r.checkedInAt),

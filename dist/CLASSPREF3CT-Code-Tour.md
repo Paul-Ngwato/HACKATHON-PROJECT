@@ -1,9 +1,9 @@
-# AttendEase — Code Tour
+# CLASSPREF3CT — Code Tour
 
 Where every file is, what it does, and how one check-in travels from a student's thumb to the
 lecturer's screen. Written so that "show me where that lives" has an answer in one line.
 
-`AttendEase v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
+`CLASSPREF3CT v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`
 
 ---
 
@@ -82,7 +82,7 @@ docs/                   the long-form engineering docs (architecture, guide, iss
 | `.../host/Register.java` | the register document: load/save `class-register.json`, revision counter, dirty flag, listeners for live events |
 | `.../host/Rules.java` | **every rule**. Sessions, codes, the fence, duplicates, device binding, late marking |
 | `.../host/Discovery.java` | advertises the register: NSD `_attendease._tcp.` and a UDP beacon on **:4174** |
-| `.../host/BtServer.java` | RFCOMM listener on UUID `8f1c9d42-…-3b6c88`, service name `AttendEase`; one socket per student, served in a loop |
+| `.../host/BtServer.java` | RFCOMM listener on UUID `8f1c9d42-…-3b6c88`, service name `CLASSPREF3CT`; one socket per student, served in a loop |
 | `.../host/RulesTest.java` | 8 JVM tests over the gates |
 | `.../host/TransportTest.java` | 6 JVM tests over the HTTP/1.1 transport |
 | `native/student/.../host/ClassFinderPlugin.java` | `find()` (loopback, then NSD/beacon, then Bluetooth) and `call({method,path,body})` |
@@ -207,7 +207,7 @@ A Cloudflare Worker with a D1 database. Three tables: `classes` (payload + key h
 - `INSERT OR IGNORE` everywhere: sync is idempotent by construction.
 
 Endpoints, schema and the exact request bodies are in
-[AttendEase-Build-API-QA.md](AttendEase-Build-API-QA.md#3-the-api-three-surfaces).
+[CLASSPREF3CT-Build-API-QA.md](CLASSPREF3CT-Build-API-QA.md#3-the-api-three-surfaces).
 
 ---
 

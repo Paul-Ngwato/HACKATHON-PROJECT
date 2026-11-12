@@ -1,4 +1,4 @@
-/* AttendEase — government portal skin.
+/* CLASSPREF3CT — government portal skin.
    Deliberately old fashioned: boxy borders, flat grey buttons, dark green bar. */
 
 :root {
@@ -796,7 +796,7 @@ body {
 }
 
 .auth-panel::before {
-  content: 'AttendEase — CLASS SERVER';
+  content: 'CLASSPREF3CT — CLASS SERVER';
   position: absolute;
   top: 0;
   left: 0;

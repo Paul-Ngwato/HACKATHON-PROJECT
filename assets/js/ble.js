@@ -1,5 +1,5 @@
 /**
- * AttendEase — Bluetooth Low Energy.
+ * CLASSPREF3CT — Bluetooth Low Energy.
  *
  * Two paths, one result shape:
  *
@@ -54,7 +54,7 @@ function explain(err) {
   if (/denied|permission|not authorized/i.test(raw)) {
     return {
       reason: 'denied',
-      message: 'Bluetooth permission is off for AttendEase. Allow “Nearby devices” in Android settings, then scan again.'
+      message: 'Bluetooth permission is off for CLASSPREF3CT. Allow “Nearby devices” in Android settings, then scan again.'
     };
   }
   if (/off|disabled|not enabled|turned off/i.test(raw)) {
@@ -85,7 +85,7 @@ export async function bleFindBeacon(names, { timeout = 6000 } = {}) {
       return {
         ok: false,
         reason: 'insecure',
-        message: 'Bluetooth is blocked on this http:// address. Open the installed AttendEase app instead.'
+        message: 'Bluetooth is blocked on this http:// address. Open the installed CLASSPREF3CT app instead.'
       };
     }
     try {

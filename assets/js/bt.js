@@ -1,5 +1,5 @@
 /**
- * AttendEase — the Bluetooth lane to the lecturer's phone.
+ * CLASSPREF3CT — the Bluetooth lane to the lecturer's phone.
  *
  * Wi-Fi is the class network and it is sometimes hostile: the campus AP gives
  * every phone its own island, so discovery finds the lecturer's address and

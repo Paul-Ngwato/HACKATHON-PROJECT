@@ -1,5 +1,5 @@
 /**
- * AttendEase — app shell, role routing and live sync.
+ * CLASSPREF3CT — app shell, role routing and live sync.
  *
  * The signed-in user still lives in sessionStorage so a lecturer tab and a
  * student tab can run side by side, but the attendance database is shared:
@@ -130,7 +130,7 @@ function cleanup() {
     try {
       activeView.destroy();
     } catch (err) {
-      console.warn('[AttendSmart] view cleanup failed', err);
+      console.warn('[CLASSPREF3CT] view cleanup failed', err);
     }
   }
   activeView = null;
@@ -146,7 +146,7 @@ function portalShell(auth, navKey, view) {
       <div class="gov-header-inner">
         <div class="gov-brand">
           <span class="gov-mark">AE</span>
-          <span>AttendEase <em>${PORTAL_NAME[role]}</em></span>
+          <span>CLASSPREF3CT <em>${PORTAL_NAME[role]}</em></span>
         </div>
         <div class="gov-user">Logged in: ${role.toUpperCase()} — ${esc(auth.user.name)}</div>
       </div>
@@ -163,7 +163,7 @@ function portalShell(auth, navKey, view) {
       }
       <main class="gov-content page">${view.html || ''}</main>
       <footer class="gov-foot">
-        <div>AttendEase v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE</div>
+        <div>CLASSPREF3CT v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE</div>
         <div class="gov-foot-tools">
           <button class="gov-link" data-action="server">Server: ${esc(serverLabel())}</button>
           <button class="gov-link" data-action="signout">Switch user</button>
@@ -187,7 +187,7 @@ function shell(auth, navKey, view) {
       <a class="brand" href="#/${auth.role}/${HOME[auth.role]}" style="text-decoration:none">
         <span class="brand-mark">${icon('shield', 20)}</span>
         <span>
-          <span class="brand-name">AttendEase</span><br>
+          <span class="brand-name">CLASSPREF3CT</span><br>
           <span class="brand-sub">Baraton University</span>
         </span>
       </a>
@@ -207,7 +207,7 @@ function shell(auth, navKey, view) {
             <span class="dot"></span><span id="net-label">Connecting…</span>
           </span>
         </div>
-        <button class="ghost-btn" data-action="install" style="display:none" title="Add AttendEase to this device's home screen">${icon('download', 15)} Install app</button>
+        <button class="ghost-btn" data-action="install" style="display:none" title="Add CLASSPREF3CT to this device's home screen">${icon('download', 15)} Install app</button>
         <button class="ghost-btn" data-action="server" title="Change the shared server address">${icon('plug', 15)} Server · ${esc(serverLabel())}</button>
         <div class="sidebar-user">
           ${avatar(user.name, avatarTone)}
@@ -543,7 +543,7 @@ function render() {
     auth = id ? findUser(db, id) : null;
     setActor(auth ? auth.user.id : null);
   } catch (err) {
-    console.error('[AttendSmart] could not load state', err);
+    console.error('[CLASSPREF3CT] could not load state', err);
     app.innerHTML = shell(
       { role: 'admin', user: (db && db.admin) || { name: 'Demo' } },
       'admin/overview',
@@ -605,7 +605,7 @@ function render() {
   try {
     view = viewFn(ctx) || {};
   } catch (err) {
-    console.error('[AttendSmart] view failed', err);
+    console.error('[CLASSPREF3CT] view failed', err);
     view = errorScreen(err);
   }
 
@@ -626,7 +626,7 @@ function render() {
         };
       }
     } catch (err) {
-      console.error('[AttendSmart] mount failed', err);
+      console.error('[CLASSPREF3CT] mount failed', err);
       toast('Interface error', { message: err.message, tone: 'error' });
     }
   }
@@ -686,7 +686,7 @@ window.addEventListener('offline', () => {
 });
 
 window.addEventListener('error', (e) => {
-  console.error('[AttendSmart] uncaught', e.error || e.message);
+  console.error('[CLASSPREF3CT] uncaught', e.error || e.message);
 });
 
 // Offline shell: the Android build already bundles every asset, so it skips
@@ -694,7 +694,7 @@ window.addEventListener('error', (e) => {
 if ('serviceWorker' in navigator && !NATIVE_APP) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js', { scope: './' }).catch((err) => {
-      console.warn('[AttendSmart] offline cache unavailable', err);
+      console.warn('[CLASSPREF3CT] offline cache unavailable', err);
     });
   });
 }
@@ -719,11 +719,11 @@ async function promptInstall() {
     const choice = await deferred.userChoice;
     accepted = !!choice && choice.outcome === 'accepted';
   } catch (err) {
-    console.warn('[AttendSmart] install prompt failed', err);
+    console.warn('[CLASSPREF3CT] install prompt failed', err);
   }
   paintInstall();
   if (accepted) {
-    toast('Installing AttendEase', { message: 'Opens full screen and stays in sync with the class server.' });
+    toast('Installing CLASSPREF3CT', { message: 'Opens full screen and stays in sync with the class server.' });
   }
 }
 
@@ -736,7 +736,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
 window.addEventListener('appinstalled', () => {
   installPrompt = null;
   paintInstall();
-  toast('App installed', { message: 'AttendEase is on your home screen.' });
+  toast('App installed', { message: 'CLASSPREF3CT is on your home screen.' });
 });
 
 /* ------------------------------------------------------------------ */
@@ -756,7 +756,7 @@ function paintBooting() {
   app.innerHTML = `<div class="auth">
     <section class="auth-panel">
       <div class="auth-card">
-        <div class="eyebrow">AttendEase</div>
+        <div class="eyebrow">CLASSPREF3CT</div>
         <h2>Starting…</h2>
         <p class="sub">${APP_ROLE === 'lecturer'
           ? 'Opening the class register on this phone.'
@@ -776,7 +776,7 @@ async function boot() {
   const slow = APP_ROLE === 'student'
     ? setTimeout(() => {
         if (settled) return;
-        renderConnect('Still searching for the lecturer phone over Wi-Fi and Bluetooth. Ask the lecturer to open AttendEase and search again — or enter the address by hand.');
+        renderConnect('Still searching for the lecturer phone over Wi-Fi and Bluetooth. Ask the lecturer to open CLASSPREF3CT and search again — or enter the address by hand.');
       }, 3000)
     : null;
 
@@ -812,7 +812,7 @@ async function boot() {
         host && host.error
           ? host.error
           : host && host.mode === 'not-found'
-            ? 'No lecturer phone answered over Wi-Fi or Bluetooth. Ask the lecturer to open AttendEase, then search again.'
+            ? 'No lecturer phone answered over Wi-Fi or Bluetooth. Ask the lecturer to open CLASSPREF3CT, then search again.'
             : null
       );
       return;

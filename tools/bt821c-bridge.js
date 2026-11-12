@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * AttendEase — GlobalSat BT-821C bridge.
+ * CLASSPREF3CT — GlobalSat BT-821C bridge.
  *
  * The BT-821C speaks Bluetooth Classic SPP and streams NMEA 0183 sentences.
  * Browsers can't open SPP sockets (Web Bluetooth is BLE only), so this small
@@ -259,7 +259,7 @@ const server = http.createServer((req, res) => {
 
   if (path === '/') {
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('AttendEase BT-821C bridge. GET /fix, /health, /nmea\n');
+    res.end('CLASSPREF3CT BT-821C bridge. GET /fix, /health, /nmea\n');
     return;
   }
 
@@ -359,7 +359,7 @@ async function listPorts() {
 /* ------------------------------------------------------------------ */
 
 if (args.help) {
-  console.log(`AttendEase BT-821C bridge
+  console.log(`CLASSPREF3CT BT-821C bridge
 
   node tools/bt821c-bridge.js --port COM7 [--baud 38400] [--http 4190] [--host 0.0.0.0]
   node tools/bt821c-bridge.js --stdin

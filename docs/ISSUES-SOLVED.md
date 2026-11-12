@@ -1,4 +1,4 @@
-# AttendEase — Engineering Log: Issues Found and Solved
+# CLASSPREF3CT — Engineering Log: Issues Found and Solved
 
 Every entry is a problem that actually appeared while building this, what caused it, what changed,
 and how the fix was checked. Dates are the working sessions; the whole build sits on top of one
@@ -33,7 +33,7 @@ is unanswered. The code awaited it directly.
 with network location before reporting failure.
 
 **Verified.** With permission blocked, the button returns within the timeout with
-*"Location permission is off for AttendEase…"*.
+*"Location permission is off for CLASSPREF3CT…"*.
 
 ---
 
@@ -174,7 +174,7 @@ setup did not.
 
 **Fix.** `assets/js/views/login.js` rewritten with portal markup (green header, boxed account list,
 flat buttons); the setup screen skinned by `assets/css/portal.css`; footer everywhere is
-`AttendEase v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`.
+`CLASSPREF3CT v1.2 | HACKATHON PROJECT | © 2026 | Support: UEAB@attendance.AC.KE`.
 
 **Verified.** Live DOM: `isPortalLogin: true`, header colour `rgb(11, 93, 46)`, `oldAuth: false`; the
 same strings confirmed inside both APKs.

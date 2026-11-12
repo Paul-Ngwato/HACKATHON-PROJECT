@@ -1,5 +1,5 @@
 /**
- * AttendEase cloud — roster and report sync.
+ * CLASSPREF3CT cloud — roster and report sync.
  *
  * The phone that ran a class owns that class's records. This Worker is a
  * durable shelf for two things and nothing more:
@@ -172,7 +172,7 @@ export default {
     }
 
     if (url.pathname === '/api/health') {
-      return json({ ok: true, service: 'attendease-cloud', time: Date.now() });
+      return json({ ok: true, service: 'classpref3ct-cloud', time: Date.now() });
     }
 
     try {

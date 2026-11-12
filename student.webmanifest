@@ -1,7 +1,7 @@
 {
   "id": "/student.html",
-  "name": "AttendEase Student",
-  "short_name": "AttendEase",
+  "name": "CLASSPREF3CT Student",
+  "short_name": "CLASSPREF3CT",
   "description": "Post attendance with the four-digit session code from inside the class GPS fence.",
   "start_url": "./student.html",
   "scope": "./",

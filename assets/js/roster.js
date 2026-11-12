@@ -1,5 +1,5 @@
 /**
- * AttendEase — student list import.
+ * CLASSPREF3CT — student list import.
  *
  * Lecturers upload the Excel sheet they already keep (StudentID + Name) or a
  * CSV/TSV export. No npm dependency is needed: .xlsx is a ZIP of XML files, so

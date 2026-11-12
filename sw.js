@@ -1,5 +1,5 @@
 /**
- * AttendEase - app shell cache.
+ * CLASSPREF3CT - app shell cache.
  *
  * The attendance database lives on the shared Node/SQLite server, so this
  * worker only caches the installable shell and its static assets. Every API
@@ -9,7 +9,7 @@
  * The BT-821C bridge on 127.0.0.1:4190 is a different origin and is left alone.
  */
 
-const CACHE = 'attendease-shell-v3';
+const CACHE = 'classpref3ct-shell-v4';
 
 const SHELL = [
   './',

@@ -1,5 +1,5 @@
 /**
- * AttendEase — UI toolkit: icons, formatters, charts, toasts, modals, CSV.
+ * CLASSPREF3CT — UI toolkit: icons, formatters, charts, toasts, modals, CSV.
  * No dependencies; every chart is inline SVG so it renders instantly offline.
  */
 
@@ -310,7 +310,7 @@ export function modal({ title, sub = '', body = '', footer = '', onMount, onClos
       try {
         onClose();
       } catch (err) {
-        console.warn('[AttendSmart] modal cleanup failed', err);
+        console.warn('[CLASSPREF3CT] modal cleanup failed', err);
       }
     }
   }
@@ -378,7 +378,7 @@ export async function downloadCSV(filename, headers, rows) {
   if (saver) {
     try {
       const saved = await saver.saveText({ name: filename, content: text, mime: 'text/csv' });
-      const where = saved && (saved.path || saved.uri) ? saved.path || saved.uri : `Downloads/AttendEase/${filename}`;
+      const where = saved && (saved.path || saved.uri) ? saved.path || saved.uri : `Downloads/CLASSPREF3CT/${filename}`;
       toast('Report saved', { message: `${filename} → ${where}` });
       return true;
     } catch (err) {

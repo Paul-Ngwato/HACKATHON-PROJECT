@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class BtServer {
 
     /** Advertised through SDP under this name, and used as the lookup key. */
-    public static final String SERVICE_NAME = "AttendEase";
+    public static final String SERVICE_NAME = "CLASSPREF3CT";
     public static final UUID SERVICE_UUID = UUID.fromString("8f1c9d42-6b7e-4c1a-9f10-2d5e7a3b6c88");
 
     private final ClassServer delegate;

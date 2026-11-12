@@ -1,5 +1,5 @@
 /**
- * AttendEase — lecturer dashboard.
+ * CLASSPREF3CT — lecturer dashboard.
  *
  * One page: a "+ Create New Unit" button, then a boxed card per unit with the
  * live code, the class list and START / STOP / DOWNLOAD EXCEL. Creating a unit

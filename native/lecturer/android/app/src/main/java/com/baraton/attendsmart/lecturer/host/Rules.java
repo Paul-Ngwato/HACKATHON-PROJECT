@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.TimeZone;
 
 /**
- * AttendEase domain rules, hosted on the lecturer's phone.
+ * CLASSPREF3CT domain rules, hosted on the lecturer's phone.
  *
  * This is the same contract the laptop server enforces, moved onto the device
  * that runs the class: session live -> enrolled student -> GPS fence -> no
